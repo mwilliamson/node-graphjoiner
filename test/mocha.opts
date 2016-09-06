@@ -1,0 +1,2 @@
+--ui exports
+--compilers js:babel-register
