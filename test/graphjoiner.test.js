@@ -17,35 +17,35 @@ const allBooks = [
 
 function fetchImmediatesFromObj(request, objs) {
     const requestedProperties = request.requestedFields.map(field => this.fields()[field]);
-    
+
     function readObj(obj) {
         return fromPairs(requestedProperties.map(property => [property, obj[property]]));
     }
-    
-    return objs.map(readObj);
+
+    return Promise.resolve(objs.map(readObj));
 }
 
 const Author = new ObjectType({
     name: "Author",
-    
+
     fields() {
         return {
             id: "id",
             name: "name",
             books: many(
                 Book,
-                () => allBooks,
+                () => Promise.resolve(allBooks),
                 {"id": "authorId"}
             )
         };
     },
-    
+
     fetchImmediates: fetchImmediatesFromObj
 });
 
 const Book = new ObjectType({
     name: "Book",
-    
+
     fields() {
         return {
             id: "id",
@@ -53,31 +53,31 @@ const Book = new ObjectType({
             authorId: "authorId",
             author: single(
                 Author,
-                () => allAuthors,
+                () => Promise.resolve(allAuthors),
                 {"authorId": "id"}
             )
         };
     },
-    
+
     fetchImmediates: fetchImmediatesFromObj
 });
 
 
 const Root = new RootObjectType({
     name: "Query",
-    
+
     fields() {
         return {
-            "books": many(Book, () => allBooks),
+            "books": many(Book, () => Promise.resolve(allBooks)),
             "author": single(Author, request => {
                 let authors = allAuthors;
-                
+
                 const authorId = parseInt(request.args["id"], 10);
                 if (authorId != null) {
                     authors = authors.filter(author => author.id === authorId);
                 }
-                
-                return authors;
+
+                return Promise.resolve(authors);
             })
         };
     }
@@ -92,28 +92,28 @@ exports["query list of entities"] = () => {
             }
         }
     `;
-    
-    const result = execute(Root, query);
-    
-    assert.deepEqual(result, {
-        "books": [
-            {
-                "id": 1,
-                "title": "Leave It to Psmith",
-            },
-            {
-                "id": 2,
-                "title": "Right Ho, Jeeves",
-            },
-            {
-                "id": 3,
-                "title": "Catch-22",
-            }
-        ]
-    });
+
+    return execute(Root, query).then(result =>
+        assert.deepEqual(result, {
+            "books": [
+                {
+                    "id": 1,
+                    "title": "Leave It to Psmith",
+                },
+                {
+                    "id": 2,
+                    "title": "Right Ho, Jeeves",
+                },
+                {
+                    "id": 3,
+                    "title": "Catch-22",
+                }
+            ]
+        })
+    );
 }
 
-    
+
 
 exports["querying list of entities with child entity"] = () => {
     const query = `
@@ -126,35 +126,35 @@ exports["querying list of entities with child entity"] = () => {
             }
         }
     `;
-    
-    const result = execute(Root, query)
-    
-    assert.deepEqual(result, {
-        "books": [
-            {
-                "id": 1,
-                "author": {
-                    "name": "PG Wodehouse",
+
+    return execute(Root, query).then(result =>
+        assert.deepEqual(result, {
+            "books": [
+                {
+                    "id": 1,
+                    "author": {
+                        "name": "PG Wodehouse",
+                    }
+                },
+                {
+                    "id": 2,
+                    "author": {
+                        "name": "PG Wodehouse",
+                    }
+                },
+                {
+                    "id": 3,
+                    "author": {
+                        "name": "Joseph Heller",
+                    }
                 }
-            },
-            {
-                "id": 2,
-                "author": {
-                    "name": "PG Wodehouse",
-                }
-            },
-            {
-                "id": 3,
-                "author": {
-                    "name": "Joseph Heller",
-                }
-            }
-        ]
-    })
+            ]
+        })
+    );
 }
 
 
-    
+
 exports["querying single entity with arg"] = () => {
     const query = `
         {
@@ -163,17 +163,17 @@ exports["querying single entity with arg"] = () => {
             }
         }
     `;
-    
-    const result = execute(Root, query);
-    
-    assert.deepEqual(result, {
-        "author": {
-            "name": "PG Wodehouse"
-        }
-    });
+
+    return execute(Root, query).then(result =>
+        assert.deepEqual(result, {
+            "author": {
+                "name": "PG Wodehouse"
+            }
+        })
+    );
 };
 
-    
+
 exports["single entity is null if not found"] = () => {
     const query = `
         {
@@ -182,15 +182,15 @@ exports["single entity is null if not found"] = () => {
             }
         }
     `;
-    
-    const result = execute(Root, query);
-    
-    assert.deepEqual(result, {
-        "author": null,
-    });
+
+    return execute(Root, query).then(result =>
+        assert.deepEqual(result, {
+            "author": null,
+        })
+    );
 }
 
-    
+
 exports["querying single entity with child entities"] = () => {
     const query = `
         {
@@ -201,15 +201,15 @@ exports["querying single entity with child entities"] = () => {
             }
         }
     `;
-    
-    const result = execute(Root, query);
-    
-    assert.deepEqual(result, {
-        "author": {
-            "books": [
-                {"title": "Leave It to Psmith"},
-                {"title": "Right Ho, Jeeves"},
-            ],
-        },
-    });
+
+    return execute(Root, query).then(result =>
+        assert.deepEqual(result, {
+            "author": {
+                "books": [
+                    {"title": "Leave It to Psmith"},
+                    {"title": "Right Ho, Jeeves"},
+                ],
+            },
+        })
+    );
 };
