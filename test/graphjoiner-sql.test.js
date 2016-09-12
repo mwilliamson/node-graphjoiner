@@ -13,7 +13,8 @@ exports.beforeEach = () => {
         dialect: "sqlite3",
         connection: {
             filename: ":memory:"
-        }
+        },
+        useNullAsDefault: true
     });
 
     return knex.schema
