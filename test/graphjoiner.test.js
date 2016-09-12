@@ -22,7 +22,7 @@ function fetchImmediatesFromObj(request, objs) {
         return fromPairs(requestedProperties.map(property => [property, obj[property]]));
     }
 
-    return Promise.resolve(objs.map(readObj));
+    return objs.map(readObj);
 }
 
 const Author = new ObjectType({
@@ -34,7 +34,7 @@ const Author = new ObjectType({
             name: "name",
             books: many(
                 Book,
-                () => Promise.resolve(allBooks),
+                () => allBooks,
                 {"id": "authorId"}
             )
         };
@@ -53,7 +53,7 @@ const Book = new ObjectType({
             authorId: "authorId",
             author: single(
                 Author,
-                () => Promise.resolve(allAuthors),
+                () => allAuthors,
                 {"authorId": "id"}
             )
         };
@@ -68,7 +68,7 @@ const Root = new RootObjectType({
 
     fields() {
         return {
-            "books": many(Book, () => Promise.resolve(allBooks)),
+            "books": many(Book, () => allBooks),
             "author": single(Author, request => {
                 let authors = allAuthors;
 
@@ -77,7 +77,7 @@ const Root = new RootObjectType({
                     authors = authors.filter(author => author.id === authorId);
                 }
 
-                return Promise.resolve(authors);
+                return authors;
             })
         };
     }

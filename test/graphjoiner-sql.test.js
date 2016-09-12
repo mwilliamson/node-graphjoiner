@@ -58,7 +58,7 @@ const Author = new ObjectType({
             books: many(
                 Book,
                 // TODO: filter to relevant books
-                (request, {query: authorQuery}) => Promise.resolve({query: knex("book")}),
+                (request, {query: authorQuery}) => ({query: knex("book")}),
                 {"id": "authorId"}
             )
         };
@@ -78,7 +78,7 @@ const Book = new ObjectType({
             author: single(
                 Author,
                 // TODO: filter to relevant authors
-                (request, {query: bookQuery}) => Promise.resolve({query: knex("author")}),
+                (request, {query: bookQuery}) => ({query: knex("author")}),
                 {"authorId": "id"}
             )
         };
@@ -93,7 +93,7 @@ const Root = new RootObjectType({
 
     fields() {
         return {
-            "books": many(Book, () => Promise.resolve({query: knex("book")})),
+            "books": many(Book, () => ({query: knex("book")})),
             "author": single(Author, request => {
                 let authors = knex("author");
 
@@ -102,7 +102,7 @@ const Root = new RootObjectType({
                     authors = authors.where("id", "=", authorId);
                 }
 
-                return Promise.resolve({query: authors});
+                return {query: authors};
             })
         };
     }

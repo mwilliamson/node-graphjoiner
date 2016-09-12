@@ -4,7 +4,7 @@ import { parse } from "graphql/language";
 
 export function execute(root, query) {
     const request = requestFromGraphqlAst(parse(query).definitions[0]);
-    return root.fetch(request).then(result => result[0].value);
+    return Promise.resolve(root.fetch(request)).then(result => result[0].value);
 }
 
 export function many(target, generateContext, join) {
@@ -73,7 +73,7 @@ class Relationship {
 
     fetch(request, context) {
         const childRequest = {...request, joinFields: values(this._join)};
-        return this._generateContext(request, context).then(childContext =>
+        return Promise.resolve(this._generateContext(request, context)).then(childContext =>
             this._target.fetch(childRequest, childContext)
         )
         .then(results =>
@@ -113,7 +113,7 @@ export class ObjectType {
         const joinToChildrenFields = flatMap(requestedRelationshipFields, field => fields[field].parentJoinKeys);
         const fetchFields = uniq(requestedImmediateFields.concat(request.joinFields).concat(joinToChildrenFields));
         const immediatesRequest = {...request, requestedFields: fetchFields};
-        return this.fetchImmediates(immediatesRequest, context).then(results => {
+        return Promise.resolve(this.fetchImmediates(immediatesRequest, context)).then(results => {
             return Promise.all(map(this.fields(), (field, fieldName) => {
                 if (field instanceof Relationship) {
                     const fieldRequest = request.children[fieldName];
@@ -137,7 +137,7 @@ export class RootObjectType extends ObjectType {
     constructor(options) {
         super({
             ...options,
-            fetchImmediates: () => Promise.resolve([{}])
+            fetchImmediates: () => [{}]
         });
     }
 }
