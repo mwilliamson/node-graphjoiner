@@ -57,8 +57,13 @@ const Author = new ObjectType({
             name: "name",
             books: many(
                 Book,
-                // TODO: filter to relevant books
-                (request, {query: authorQuery}) => ({query: knex("book")}),
+                (request, {query: authorQuery}) => ({
+                    query: knex("book").join(
+                        authorQuery.select("author.id").distinct().as("author"),
+                        "book.author_id",
+                        "author.id"
+                    )
+                }),
                 {"id": "authorId"}
             )
         };
@@ -77,8 +82,13 @@ const Book = new ObjectType({
             authorId: "author_id",
             author: single(
                 Author,
-                // TODO: filter to relevant authors
-                (request, {query: bookQuery}) => ({query: knex("author")}),
+                (request, {query: bookQuery}) => ({
+                    query: knex("author").join(
+                        bookQuery.select("book.author_id").distinct().as("book"),
+                        "author.id",
+                        "book.author_id"
+                    )
+                }),
                 {"authorId": "id"}
             )
         };
