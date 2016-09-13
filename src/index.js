@@ -78,7 +78,7 @@ class Relationship {
     }
 }
 
-export class ObjectType {
+export class JoinType {
     constructor(options) {
         this.fetchImmediates = options.fetchImmediates;
         this._generateFields = options.fields;
@@ -124,7 +124,7 @@ export class ObjectType {
     }
 }
 
-export class RootObjectType extends ObjectType {
+export class RootJoinType extends JoinType {
     constructor(options) {
         super({
             ...options,

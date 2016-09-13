@@ -2,7 +2,7 @@ import assert from "assert";
 
 import { fromPairs } from "lodash";
 
-import { ObjectType, RootObjectType, single, many, execute } from "../lib";
+import { JoinType, RootJoinType, single, many, execute } from "../lib";
 
 const allAuthors = [
     {id: 1, name: "PG Wodehouse"},
@@ -25,7 +25,7 @@ function fetchImmediatesFromObj(request, objs) {
     return objs.map(readObj);
 }
 
-const Author = new ObjectType({
+const Author = new JoinType({
     name: "Author",
 
     fields() {
@@ -43,7 +43,7 @@ const Author = new ObjectType({
     fetchImmediates: fetchImmediatesFromObj
 });
 
-const Book = new ObjectType({
+const Book = new JoinType({
     name: "Book",
 
     fields() {
@@ -63,7 +63,7 @@ const Book = new ObjectType({
 });
 
 
-const Root = new RootObjectType({
+const Root = new RootJoinType({
     name: "Query",
 
     fields() {

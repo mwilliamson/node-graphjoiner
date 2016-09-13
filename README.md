@@ -69,10 +69,10 @@ knex.schema
 We then define object types for the root, books and authors:
 
 ```javascript
-import { ObjectType, RootObjectType, single, many } from "graphjoiner";
+import { JoinType, RootJoinType, single, many } from "graphjoiner";
 import { invert, mapKeys } from "lodash";
 
-const Root = new RootObjectType({
+const Root = new RootJoinType({
     name: "Query",
 
     fields() {
@@ -101,7 +101,7 @@ function fetchImmediatesFromQuery(request, {query}) {
     );
 }
 
-const Book = new ObjectType({
+const Book = new JoinType({
     name: "Book",
 
     fields() {
@@ -127,7 +127,7 @@ const Book = new ObjectType({
     fetchImmediates: fetchImmediatesFromQuery
 });
 
-const Author = new ObjectType({
+const Author = new JoinType({
     name: "Author",
 
     fields() {
@@ -188,7 +188,7 @@ Which produces:
 Let's break things down a little, starting with the definition of the root object:
 
 ```javascript
-const Root = new RootObjectType({
+const Root = new RootJoinType({
     name: "Query",
 
     fields() {
@@ -218,7 +218,7 @@ related books: in this case all books, potentially filtered by a genre argument.
 This means we need to define `Book`:
 
 ```javascript
-const Book = new ObjectType({
+const Book = new JoinType({
     name: "Book",
 
     fields() {
@@ -279,7 +279,7 @@ For completeness, we can tweak the definition of `Author` so
 we can request the books by an author:
 
 ```javascript
-const Author = new ObjectType({
+const Author = new JoinType({
     name: "Author",
 
     fields() {

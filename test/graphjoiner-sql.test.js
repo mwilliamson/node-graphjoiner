@@ -2,7 +2,7 @@ import assert from "assert";
 
 import { fromPairs, invert, isString, mapKeys } from "lodash";
 
-import { ObjectType, RootObjectType, single, many, execute } from "../lib";
+import { JoinType, RootJoinType, single, many, execute } from "../lib";
 
 import Knex from "knex";
 
@@ -49,7 +49,7 @@ function fetchImmediatesFromQuery(request, {query}) {
     );
 }
 
-const Author = new ObjectType({
+const Author = new JoinType({
     name: "Author",
 
     fields() {
@@ -73,7 +73,7 @@ const Author = new ObjectType({
     fetchImmediates: fetchImmediatesFromQuery
 });
 
-const Book = new ObjectType({
+const Book = new JoinType({
     name: "Book",
 
     fields() {
@@ -99,7 +99,7 @@ const Book = new ObjectType({
 });
 
 
-const Root = new RootObjectType({
+const Root = new RootJoinType({
     name: "Query",
 
     fields() {
