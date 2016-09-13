@@ -36,3 +36,13 @@ exports["get() returns all matching values when there are multiple join values"]
     assert.deepEqual(map.get(["b", 1]), [4]);
     assert.deepEqual(map.get(["b", 2]), [5]);
 };
+
+exports["values are distinct by type"] = () => {
+    var map = new JoinMap([
+        {joinValues: ["1"], value: 1},
+        {joinValues: [1], value: 2}
+    ]);
+
+    assert.deepEqual(map.get(["1"]), [1]);
+    assert.deepEqual(map.get([1]), [2]);
+};
