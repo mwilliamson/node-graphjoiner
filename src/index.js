@@ -42,14 +42,20 @@ class RelationshipResults {
         this._results = options.results;
         this._defaultValue = options.defaultValue;
         this._processResults = options.processResults;
+        this._parentJoinKeys = options.parentJoinKeys;
     }
 
-    get(parentJoinValues) {
+    get(parent) {
+        const parentJoinValues = this._parentJoinValues(parent);
         // TODO: turn results into a map to avoid n^2 time
         const values = this._results
             .filter(result => isEqual(result.joinValues, parentJoinValues))
             .map(result => result.value);
         return this._processResults(values);
+    }
+
+    _parentJoinValues(parent) {
+        return this._parentJoinKeys.map(joinField => parent[joinField]);
     }
 }
 
@@ -63,10 +69,6 @@ class Relationship {
         this.parentJoinKeys = this._join.map(pair => pair[0]);
     }
 
-    parentJoinValues(parent) {
-        return this.parentJoinKeys.map(joinField => parent[joinField]);
-    }
-
     fetch(request, context) {
         const childRequest = {...request, joinFields: this._join.map(pair => pair[1])};
         return Promise.resolve(this._generateContext(request, context)).then(childContext =>
@@ -75,6 +77,7 @@ class Relationship {
         .then(results =>
             new RelationshipResults({
                 results,
+                parentJoinKeys: this.parentJoinKeys,
                 defaultValue: this._defaultValue,
                 processResults: this._processResults
             })
@@ -115,7 +118,7 @@ export class ObjectType {
                     if (fieldRequest != null) {
                         return field.fetch(fieldRequest, context).then(children => {
                             results.forEach(result => {
-                                result[fieldName] = children.get(field.parentJoinValues(result));
+                                result[fieldName] = children.get(result);
                             })
                         });
                     }
