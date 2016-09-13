@@ -304,6 +304,12 @@ const Author = new ObjectType({
 });
 ```
 
+(Note that when we return the Knex query, we return it wrapped in an object
+i.e. `{query: query}`. This is to prevent the query from being executed, since
+Knex queries also behave as promises (where `.then()` begins execution of the
+query), and GraphJoiner allows promises to be returned from the various
+methods where we might want to return a Knex query.)
+
 Installation
 ------------
 
