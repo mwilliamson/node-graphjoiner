@@ -1,6 +1,7 @@
-import { flatMap, forEach, fromPairs, isEqual, map, partition, toPairs, uniq } from "lodash";
-
+import { flatMap, forEach, fromPairs, map, partition, toPairs, uniq } from "lodash";
 import { parse } from "graphql/language";
+
+import JoinMap from "./JoinMap";
 
 export function execute(root, query) {
     const request = requestFromGraphqlAst(parse(query).definitions[0]);
@@ -39,7 +40,7 @@ function singleValue(values) {
 
 class RelationshipResults {
     constructor(options) {
-        this._results = options.results;
+        this._results = new JoinMap(options.results);
         this._defaultValue = options.defaultValue;
         this._processResults = options.processResults;
         this._parentJoinKeys = options.parentJoinKeys;
@@ -47,10 +48,7 @@ class RelationshipResults {
 
     get(parent) {
         const parentJoinValues = this._parentJoinValues(parent);
-        // TODO: turn results into a map to avoid n^2 time
-        const values = this._results
-            .filter(result => isEqual(result.joinValues, parentJoinValues))
-            .map(result => result.value);
+        const values = this._results.get(parentJoinValues);
         return this._processResults(values);
     }
 
