@@ -1,4 +1,4 @@
-import { flatMap, forEach, fromPairs, isEqual, map, partition, uniq, values } from "lodash";
+import { flatMap, forEach, fromPairs, isEqual, map, partition, toPairs, uniq } from "lodash";
 
 import { parse } from "graphql/language";
 
@@ -37,13 +37,9 @@ function singleValue(values) {
     }
 }
 
-// TODO: the order of lodash.values() (and Object.keys()?) is not guaranteed,
-// but they need to line up for multi-field joins
-
 class RelationshipResults {
     constructor(options) {
         this._results = options.results;
-        this._join = options.join;
         this._defaultValue = options.defaultValue;
         this._processResults = options.processResults;
     }
@@ -61,25 +57,24 @@ class Relationship {
     constructor(options) {
         this._target = options.target;
         this._generateContext = options.generateContext;
-        this._join = options.join || {};
+        this._join = toPairs(options.join || {});
         this._processResults = options.processResults;
         this._defaultValue = options.defaultValue;
-        this.parentJoinKeys = Object.keys(this._join);
+        this.parentJoinKeys = this._join.map(pair => pair[0]);
     }
 
     parentJoinValues(parent) {
-        return Object.keys(this._join).map(joinField => parent[joinField]);
+        return this.parentJoinKeys.map(joinField => parent[joinField]);
     }
 
     fetch(request, context) {
-        const childRequest = {...request, joinFields: values(this._join)};
+        const childRequest = {...request, joinFields: this._join.map(pair => pair[1])};
         return Promise.resolve(this._generateContext(request, context)).then(childContext =>
             this._target.fetch(childRequest, childContext)
         )
         .then(results =>
             new RelationshipResults({
                 results,
-                join: this._join,
                 defaultValue: this._defaultValue,
                 processResults: this._processResults
             })
