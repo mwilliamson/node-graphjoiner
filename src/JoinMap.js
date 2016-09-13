@@ -1,4 +1,6 @@
-import { isEqual } from "lodash";
+import Immutable from "immutable";
+
+import { toListMap } from "./immutable";
 
 /**
  * Given an array of results ({joinValues: Array, value: Any}), provides a
@@ -10,12 +12,13 @@ import { isEqual } from "lodash";
  */
 export default class JoinMap {
     constructor(results) {
-        this._results = results;
+        this._results = toListMap(
+            results,
+            result => [Immutable.fromJS(result.joinValues), result.value]
+        );
     }
 
-    get(joinValues) {
-        return this._results
-            .filter(result => isEqual(result.joinValues, joinValues))
-            .map(result => result.value);
+    get(joinValues, defaultValue) {
+        return this._results.get(Immutable.fromJS(joinValues), defaultValue);
     }
 }

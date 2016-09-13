@@ -13,7 +13,6 @@ export function many(target, generateContext, join) {
         target,
         generateContext,
         join,
-        defaultValue: [],
         processResults: x => x
     });
 }
@@ -23,7 +22,6 @@ export function single(target, generateContext, join) {
         target,
         generateContext,
         join,
-        defaultValue: null,
         processResults: singleValue
     });
 }
@@ -41,14 +39,13 @@ function singleValue(values) {
 class RelationshipResults {
     constructor(options) {
         this._results = new JoinMap(options.results);
-        this._defaultValue = options.defaultValue;
         this._processResults = options.processResults;
         this._parentJoinKeys = options.parentJoinKeys;
     }
 
     get(parent) {
         const parentJoinValues = this._parentJoinValues(parent);
-        const values = this._results.get(parentJoinValues);
+        const values = this._results.get(parentJoinValues, []);
         return this._processResults(values);
     }
 
@@ -63,7 +60,6 @@ class Relationship {
         this._generateContext = options.generateContext;
         this._join = toPairs(options.join || {});
         this._processResults = options.processResults;
-        this._defaultValue = options.defaultValue;
         this.parentJoinKeys = this._join.map(pair => pair[0]);
     }
 
@@ -76,7 +72,6 @@ class Relationship {
             new RelationshipResults({
                 results,
                 parentJoinKeys: this.parentJoinKeys,
-                defaultValue: this._defaultValue,
                 processResults: this._processResults
             })
         );

@@ -48,6 +48,7 @@
     ]
   },
   "dependencies": {
-    "graphql": "^0.7.0"
+    "graphql": "^0.7.0",
+    "immutable": "^3.8.1"
   }
 }
