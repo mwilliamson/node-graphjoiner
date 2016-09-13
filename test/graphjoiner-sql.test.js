@@ -147,7 +147,7 @@ exports["query list of entities"] = () => {
             ]
         })
     );
-}
+};
 
 
 
@@ -187,7 +187,7 @@ exports["querying list of entities with child entity"] = () => {
             ]
         })
     );
-}
+};
 
 
 
@@ -224,7 +224,7 @@ exports["single entity is null if not found"] = () => {
             "author": null,
         })
     );
-}
+};
 
 
 exports["querying single entity with child entities"] = () => {
