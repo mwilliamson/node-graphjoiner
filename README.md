@@ -66,11 +66,11 @@ knex.schema
     ]).into("book"))
 ```
 
-We then define object types for the root, books and authors:
+We then define types for the root, books and authors:
 
 ```javascript
 import { JoinType, RootJoinType, single, many } from "graphjoiner";
-import { invert, mapKeys } from "lodash";
+import { fromPairs, mapKeys, zip } from "lodash";
 
 const Root = new RootJoinType({
     name: "Query",
@@ -85,15 +85,15 @@ const Root = new RootJoinType({
                 }
 
                 return {query: books};
-            }
+            }, {}, {genre: {type: GraphQLString}}
         };
     }
 });
 
 function fetchImmediatesFromQuery(request, {query}) {
     const fields = this.fields();
-    const columnsToFields = invert(fields);
-    const requestedColumns = request.requestedFields.map(field => fields[field]);
+    const requestedColumns = request.requestedFields.map(field => fields[field].columnName);
+    const columnsToFields = fromPairs(zip(requestedColumns, request.requestedFields));
     return query.select(request.requestedColumns).then(records =>
         records.map(record =>
             mapKeys(record, (value, name) => columnsToFields[name])
@@ -106,10 +106,10 @@ const Book = new JoinType({
 
     fields() {
         return {
-            id: "id",
-            title: "title",
-            genre: "genre",
-            authorId: "author_id",
+            id: JoinType.field({columnName: "id", type: GraphQLInt}),
+            title: JoinType.field({columnName: "title", type: GraphQLString}),
+            genre: JoinType.field({columnName: "genre", type: GraphQLString}),
+            authorId: JoinType.field({columnName: "author_id", type: GraphQLInt}),
             author: single(
                 Author,
                 (request, {query: bookQuery}) => ({
@@ -132,8 +132,8 @@ const Author = new JoinType({
 
     fields() {
         return {
-            id: "id",
-            name: "name"
+            id: JoinType.field({columnName: "id", type: GraphQLInt}),
+            name: JoinType.field({columnName: "name", type: GraphQLString})
         };
     },
 
@@ -201,7 +201,7 @@ const Root = new RootJoinType({
                 }
 
                 return {query: books};
-            }
+            }, {}, {genre: {type: GraphQLString}}
         };
     }
 });
@@ -223,10 +223,10 @@ const Book = new JoinType({
 
     fields() {
         return {
-            id: "id",
-            title: "title",
-            genre: "genre",
-            authorId: "author_id",
+            id: JoinType.field({columnName: "id", type: GraphQLInt}),
+            title: JoinType.field({columnName: "title", type: GraphQLString}),
+            genre: JoinType.field({columnName: "genre", type: GraphQLString}),
+            authorId: JoinType.field({columnName: "author_id", type: GraphQLInt}),
             author: single(
                 Author,
                 (request, {query: bookQuery}) => ({
@@ -257,7 +257,7 @@ this is fine for relationships defined on the root.)
 
 The remaining fields define a mapping from the GraphQL field to the database
 column. This mapping is handled by `fetchImmediatesFromQuery()`.
-The value of `request.requested_fields` in `fetchImmediates()`
+The value of `request.requestedFields` in `fetchImmediates()`
 is the fields that aren't defined as relationships
 (using `single` or `many`) that were either explicitly requested in the
 original GraphQL query, or are required as part of the join.
@@ -266,7 +266,7 @@ original GraphQL query, or are required as part of the join.
 function fetchImmediatesFromQuery(request, {query}) {
     const fields = this.fields();
     const columnsToFields = invert(fields);
-    const requestedColumns = request.requestedFields.map(field => fields[field]);
+    const requestedColumns = request.requestedFields.map(field => fields[field].columnName);
     return query.select(request.requestedColumns).then(records =>
         records.map(record =>
             mapKeys(record, (value, name) => columnsToFields[name])
@@ -284,8 +284,8 @@ const Author = new JoinType({
 
     fields() {
         return {
-            id: "id",
-            name: "name",
+            id: JoinType.field({columnName: "id", type: GraphQLInt}),
+            name: JoinType.field({columnName: "name", type: GraphQLString}),
             books: many(
                 Book,
                 (request, {query: authorQuery}) => ({
