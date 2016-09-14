@@ -1,6 +1,6 @@
 {
   "name": "graphjoiner",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Implementing GraphQL with joins",
   "main": "lib/index.js",
   "directories": {
