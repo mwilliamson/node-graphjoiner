@@ -13,6 +13,7 @@ function executeRequest(root, request) {
     return Promise.resolve(root.fetch(request)).then(result => result[0].value);
 }
 
+// TODO: pass (just optional?) relationship arguments as an object
 export function many(target, generateContext, join, args) {
     return new Relationship({
         target,
