@@ -160,6 +160,18 @@ const query = `
 execute(Root, query)
 ```
 
+Or by turning the types into ordinary GraphQL types:
+
+```javascript
+import { graphql } from "graphql";
+
+const schema = new GraphQLSchema({
+    query: Root.toGraphQLType()
+});
+
+graphql(schema, query).then(result => result.data);
+```
+
 Which produces:
 
     {
