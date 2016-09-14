@@ -1,10 +1,15 @@
-import { flatMap, forEach, fromPairs, map, partition, toPairs, uniq } from "lodash";
+import { flatMap, forEach, fromPairs, map, mapValues, partition, toPairs, uniq } from "lodash";
 import { parse } from "graphql/language";
+import { GraphQLObjectType, GraphQLList } from "graphql";
 
 import JoinMap from "./JoinMap";
 
 export function execute(root, query) {
     const request = requestFromGraphqlAst(parse(query).definitions[0]);
+    return executeRequest(root, request);
+}
+
+function executeRequest(root, request) {
     return Promise.resolve(root.fetch(request)).then(result => result[0].value);
 }
 
@@ -13,7 +18,8 @@ export function many(target, generateContext, join) {
         target,
         generateContext,
         join,
-        processResults: x => x
+        processResults: x => x,
+        wrapType: type => new GraphQLList(type)
     });
 }
 
@@ -22,7 +28,8 @@ export function single(target, generateContext, join) {
         target,
         generateContext,
         join,
-        processResults: singleValue
+        processResults: singleValue,
+        wrapType: type => type
     });
 }
 
@@ -61,6 +68,7 @@ class Relationship {
         this._join = toPairs(options.join || {});
         this._processResults = options.processResults;
         this.parentJoinKeys = this._join.map(pair => pair[0]);
+        this._wrapType = options.wrapType;
     }
 
     fetch(request, context) {
@@ -76,10 +84,21 @@ class Relationship {
             })
         );
     }
+
+    toGraphQLField() {
+        return {
+            type: this._wrapType(this._target.toGraphQLType()),
+            resolve: (source, args, context, info) => {
+                const request = requestFromGraphqlAst(info.fieldASTs[0]);
+                return this.fetch(request, null).then(results => results.get([]));
+            }
+        };
+    }
 }
 
 export class JoinType {
     constructor(options) {
+        this._name = options.name;
         this.fetchImmediates = options.fetchImmediates;
         this._generateFields = options.fields;
         this._fields = null;
@@ -87,6 +106,7 @@ export class JoinType {
 
     fields() {
         if (this._fields === null) {
+            // TODO: add name to field definitions?
             this._fields = this._generateFields();
         }
         return this._fields;
@@ -103,6 +123,7 @@ export class JoinType {
 
         const joinToChildrenFields = flatMap(requestedRelationshipFields, field => fields[field].parentJoinKeys);
         const fetchFields = uniq(requestedImmediateFields.concat(request.joinFields).concat(joinToChildrenFields));
+        // TODO: add actual fields rather than names?
         const immediatesRequest = {...request, requestedFields: fetchFields};
         return Promise.resolve(this.fetchImmediates(immediatesRequest, context)).then(results => {
             return Promise.all(map(this.fields(), (field, fieldName) => {
@@ -122,7 +143,26 @@ export class JoinType {
             })));
         });
     }
+
+    toGraphQLType() {
+        if (!this._graphQLType) {
+            this._graphQLType = new GraphQLObjectType({
+                name: this._name,
+                fields: () => mapValues(this.fields(), field => field.toGraphQLField())
+            });
+        }
+        return this._graphQLType;
+    }
 }
+
+JoinType.field = function field(options) {
+    return {
+        ...options,
+        toGraphQLField() {
+            return {type: options.type};
+        }
+    };
+};
 
 export class RootJoinType extends JoinType {
     constructor(options) {
@@ -132,7 +172,6 @@ export class RootJoinType extends JoinType {
         });
     }
 }
-
 
 function requestFromGraphqlAst(ast) {
     const children = graphqlChildren(ast);

@@ -1,6 +1,7 @@
 import assert from "assert";
 
-import { fromPairs, invert, isString, mapKeys } from "lodash";
+import { fromPairs, mapKeys, zip } from "lodash";
+import { graphql, GraphQLSchema, GraphQLInt, GraphQLString } from "graphql";
 
 import { JoinType, RootJoinType, single, many, execute } from "../lib";
 
@@ -40,8 +41,8 @@ exports.beforeEach = () => {
 
 function fetchImmediatesFromQuery(request, {query}) {
     const fields = this.fields();
-    const columnsToFields = invert(fields);
-    const requestedColumns = request.requestedFields.map(field => fields[field]);
+    const requestedColumns = request.requestedFields.map(field => fields[field].columnName);
+    const columnsToFields = fromPairs(zip(requestedColumns, request.requestedFields));
     return query.select(request.requestedColumns).then(records =>
         records.map(record =>
             mapKeys(record, (value, name) => columnsToFields[name])
@@ -54,8 +55,8 @@ const Author = new JoinType({
 
     fields() {
         return {
-            id: "id",
-            name: "name",
+            id: JoinType.field({columnName: "id", type: GraphQLInt}),
+            name: JoinType.field({columnName: "name", type: GraphQLString}),
             books: many(
                 Book,
                 (request, {query: authorQuery}) => ({
@@ -78,9 +79,9 @@ const Book = new JoinType({
 
     fields() {
         return {
-            id: "id",
-            title: "title",
-            authorId: "author_id",
+            id: JoinType.field({columnName: "id", type: GraphQLInt}),
+            title: JoinType.field({columnName: "title", type: GraphQLString}),
+            authorId: JoinType.field({columnName: "author_id", type: GraphQLInt}),
             author: single(
                 Author,
                 (request, {query: bookQuery}) => ({

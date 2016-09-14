@@ -84,6 +84,10 @@ const Root = new RootJoinType({
     }
 });
 
+const schema = new GraphQLSchema({
+    query: Root.toGraphQLType()
+});
+
 exports["query list of entities"] = () => {
     const query = `
         {
@@ -94,123 +98,24 @@ exports["query list of entities"] = () => {
         }
     `;
 
-    return execute(Root, query).then(result =>
+    return graphql(schema, query).then(result =>
         assert.deepEqual(result, {
-            "books": [
-                {
-                    "id": 1,
-                    "title": "Leave It to Psmith",
-                },
-                {
-                    "id": 2,
-                    "title": "Right Ho, Jeeves",
-                },
-                {
-                    "id": 3,
-                    "title": "Catch-22",
-                }
-            ]
-        })
-    );
-}
-
-
-
-exports["querying list of entities with child entity"] = () => {
-    const query = `
-        {
-            books {
-                id
-                author {
-                    name
-                }
-            }
-        }
-    `;
-
-    return execute(Root, query).then(result =>
-        assert.deepEqual(result, {
-            "books": [
-                {
-                    "id": 1,
-                    "author": {
-                        "name": "PG Wodehouse",
-                    }
-                },
-                {
-                    "id": 2,
-                    "author": {
-                        "name": "PG Wodehouse",
-                    }
-                },
-                {
-                    "id": 3,
-                    "author": {
-                        "name": "Joseph Heller",
-                    }
-                }
-            ]
-        })
-    );
-}
-
-
-
-exports["querying single entity with arg"] = () => {
-    const query = `
-        {
-            author(id: 1) {
-                name
-            }
-        }
-    `;
-
-    return execute(Root, query).then(result =>
-        assert.deepEqual(result, {
-            "author": {
-                "name": "PG Wodehouse"
-            }
-        })
-    );
-};
-
-
-exports["single entity is null if not found"] = () => {
-    const query = `
-        {
-            author(id: 100) {
-                name
-            }
-        }
-    `;
-
-    return execute(Root, query).then(result =>
-        assert.deepEqual(result, {
-            "author": null,
-        })
-    );
-}
-
-
-exports["querying single entity with child entities"] = () => {
-    const query = `
-        {
-            author(id: 1) {
-                books {
-                    title
-                }
-            }
-        }
-    `;
-
-    return execute(Root, query).then(result =>
-        assert.deepEqual(result, {
-            "author": {
+            data: {
                 "books": [
-                    {"title": "Leave It to Psmith"},
-                    {"title": "Right Ho, Jeeves"},
-                ],
-            },
+                    {
+                        "id": 1,
+                        "title": "Leave It to Psmith",
+                    },
+                    {
+                        "id": 2,
+                        "title": "Right Ho, Jeeves",
+                    },
+                    {
+                        "id": 3,
+                        "title": "Catch-22",
+                    }
+                ]
+            }
         })
     );
-};
+}
