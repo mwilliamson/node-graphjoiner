@@ -277,8 +277,8 @@ original GraphQL query, or are required as part of the join.
 ```javascript
 function fetchImmediatesFromQuery(request, {query}) {
     const fields = this.fields();
-    const columnsToFields = invert(fields);
     const requestedColumns = request.requestedFields.map(field => fields[field].columnName);
+    const columnsToFields = fromPairs(zip(requestedColumns, request.requestedFields));
     return query.select(request.requestedColumns).then(records =>
         records.map(record =>
             mapKeys(record, (value, name) => columnsToFields[name])
