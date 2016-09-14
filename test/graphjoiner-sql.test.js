@@ -114,7 +114,7 @@ const Root = new RootJoinType({
                 }
 
                 return {query: authors};
-            })
+            }, {})
         };
     }
 });

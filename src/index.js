@@ -13,21 +13,23 @@ function executeRequest(root, request) {
     return Promise.resolve(root.fetch(request)).then(result => result[0].value);
 }
 
-export function many(target, generateContext, join) {
+export function many(target, generateContext, join, args) {
     return new Relationship({
         target,
         generateContext,
         join,
+        args,
         processResults: x => x,
         wrapType: type => new GraphQLList(type)
     });
 }
 
-export function single(target, generateContext, join) {
+export function single(target, generateContext, join, args) {
     return new Relationship({
         target,
         generateContext,
         join,
+        args,
         processResults: singleValue,
         wrapType: type => type
     });
@@ -66,6 +68,7 @@ class Relationship {
         this._target = options.target;
         this._generateContext = options.generateContext;
         this._join = toPairs(options.join || {});
+        this._args = options.args || {};
         this._processResults = options.processResults;
         this.parentJoinKeys = this._join.map(pair => pair[0]);
         this._wrapType = options.wrapType;
@@ -86,12 +89,15 @@ class Relationship {
     }
 
     toGraphQLField() {
+        // TODO: differentiate between root and non-root types properly
+        const resolve = this._join.length !== 0 ? undefined : (source, args, context, info) => {
+            const request = requestFromGraphqlAst(info.fieldASTs[0]);
+            return this.fetch(request, null).then(results => results.get([]));
+        };
         return {
             type: this._wrapType(this._target.toGraphQLType()),
-            resolve: (source, args, context, info) => {
-                const request = requestFromGraphqlAst(info.fieldASTs[0]);
-                return this.fetch(request, null).then(results => results.get([]));
-            }
+            resolve: resolve,
+            args: this._args
         };
     }
 }

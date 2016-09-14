@@ -1,9 +1,8 @@
-import assert from "assert";
-
-import { fromPairs } from "lodash";
+import { extend, fromPairs } from "lodash";
 import { graphql, GraphQLSchema, GraphQLInt, GraphQLString } from "graphql";
 
 import { JoinType, RootJoinType, single, many, execute } from "../lib";
+import { testCases } from "./executionTestCases";
 
 const allAuthors = [
     {id: 1, name: "PG Wodehouse"},
@@ -79,7 +78,7 @@ const Root = new RootJoinType({
                 }
 
                 return authors;
-            })
+            }, {}, {"id": {type: GraphQLInt}})
         };
     }
 });
@@ -90,34 +89,4 @@ const schema = new GraphQLSchema({
     query: Root.toGraphQLType()
 });
 
-exports["query list of entities"] = () => {
-    const query = `
-        {
-            books {
-                id
-                title
-            }
-        }
-    `;
-
-    return graphql(schema, query).then(result =>
-        assert.deepEqual(result, {
-            data: {
-                "books": [
-                    {
-                        "id": 1,
-                        "title": "Leave It to Psmith",
-                    },
-                    {
-                        "id": 2,
-                        "title": "Right Ho, Jeeves",
-                    },
-                    {
-                        "id": 3,
-                        "title": "Catch-22",
-                    }
-                ]
-            }
-        })
-    );
-}
+extend(exports, testCases(query => graphql(schema, query).then(result => result.data)));
