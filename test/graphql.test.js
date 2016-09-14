@@ -85,6 +85,8 @@ const Root = new RootJoinType({
 });
 
 const schema = new GraphQLSchema({
+    // TODO: we should make sure we only do this on root types (or rather,
+    // those without immediate fields and no join keys on fields).
     query: Root.toGraphQLType()
 });
 
