@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mocha",
+    "test": "mocha 'test/**/*.test.js'",
     "prepublish": "npm build",
     "build": "babel src --out-dir lib --source-maps",
     "watch": "npm run build -- --watch"
