@@ -163,7 +163,7 @@ execute(Root, query)
 Or by turning the types into ordinary GraphQL types:
 
 ```javascript
-import { graphql } from "graphql";
+import { graphql, GraphQLSchema } from "graphql";
 
 const schema = new GraphQLSchema({
     query: Root.toGraphQLType()
