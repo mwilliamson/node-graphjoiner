@@ -85,7 +85,7 @@ const Root = new RootJoinType({
                 }
 
                 return {query: books};
-            }, {}, {genre: {type: GraphQLString}}
+            }, {}, {genre: {type: GraphQLString}})
         };
     }
 });
