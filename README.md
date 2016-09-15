@@ -60,9 +60,9 @@ knex.schema
         {id: 2, name: "Joseph Heller"}
     ]).into("author"))
     .then(() => knex.insert([
-        {id: 1, title: "Leave It to Psmith", author_id: 1},
-        {id: 2, title: "Right Ho, Jeeves", author_id: 1},
-        {id: 3, title: "Catch-22", author_id: 2}
+        {id: 1, title: "Leave It to Psmith", genre: "comedy", author_id: 1},
+        {id: 2, title: "Right Ho, Jeeves", genre: "comedy", author_id: 1},
+        {id: 3, title: "Catch-22", genre: "comedy", author_id: 2}
     ]).into("book"))
 ```
 
