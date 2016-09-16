@@ -16,7 +16,7 @@ function executeRequest(root, request) {
 export function many({target, select, join, args}={}) {
     return new Relationship({
         target,
-        generateContext: select,
+        select,
         join,
         args,
         processResults: x => x,
@@ -27,7 +27,7 @@ export function many({target, select, join, args}={}) {
 export function single({target, select, join, args}={}) {
     return new Relationship({
         target,
-        generateContext: select,
+        select,
         join,
         args,
         processResults: singleValue,
@@ -66,7 +66,7 @@ class RelationshipResults {
 class Relationship {
     constructor(options) {
         this._target = options.target;
-        this._generateContext = options.generateContext;
+        this._select = options.select;
         this._join = toPairs(options.join || {});
         this._args = options.args || {};
         this._processResults = options.processResults;
@@ -74,10 +74,10 @@ class Relationship {
         this._wrapType = options.wrapType;
     }
 
-    fetch(request, context) {
+    fetch(request, selectParent) {
         const childRequest = {...request, joinFields: this._join.map(pair => pair[1])};
-        return Promise.resolve(this._generateContext(request, context)).then(childContext =>
-            this._target.fetch(childRequest, childContext)
+        return Promise.resolve(this._select(request, selectParent)).then(select =>
+            this._target.fetch(childRequest, select)
         )
         .then(results =>
             new RelationshipResults({
@@ -118,7 +118,7 @@ export class JoinType {
         return this._fields;
     }
 
-    fetch(request, context) {
+    fetch(request, select) {
         const fields = this.fields();
 
         const requestedFields = request.requestedFields;
@@ -131,12 +131,12 @@ export class JoinType {
         const fetchFields = uniq(requestedImmediateFields.concat(request.joinFields).concat(joinToChildrenFields));
         // TODO: add actual fields rather than names?
         const immediatesRequest = {...request, requestedFields: fetchFields};
-        return Promise.resolve(this.fetchImmediates(immediatesRequest, context)).then(results => {
+        return Promise.resolve(this.fetchImmediates(immediatesRequest, select)).then(results => {
             return Promise.all(map(this.fields(), (field, fieldName) => {
                 if (field instanceof Relationship) {
                     const fieldRequest = request.children[fieldName];
                     if (fieldRequest != null) {
-                        return field.fetch(fieldRequest, context).then(children => {
+                        return field.fetch(fieldRequest, select).then(children => {
                             results.forEach(result => {
                                 result[fieldName] = children.get(result);
                             })
