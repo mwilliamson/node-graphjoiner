@@ -1,7 +1,9 @@
+import assert from "assert";
+
 import { fromPairs } from "lodash";
 import { graphql, GraphQLSchema, GraphQLInt, GraphQLString } from "graphql";
 
-import { JoinType, RootJoinType, single, many, execute } from "../lib";
+import { JoinType, RootJoinType, single, many } from "../lib";
 import { testCases } from "./executionTestCases";
 
 const allAuthors = [
@@ -93,4 +95,11 @@ const schema = new GraphQLSchema({
     query: Root.toGraphQLType()
 });
 
-exports[module.filename] = testCases(query => graphql(schema, query).then(result => result.data));
+function execute(query) {
+    return graphql(schema, query).then(result => {
+        assert.ok(!result.errors);
+        return result.data;
+    });
+}
+
+exports[module.filename] = testCases(execute);
