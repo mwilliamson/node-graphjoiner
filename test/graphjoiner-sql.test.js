@@ -1,4 +1,4 @@
-import { extend, fromPairs, mapKeys, zip } from "lodash";
+import { fromPairs, mapKeys, zip } from "lodash";
 import { graphql, GraphQLSchema, GraphQLInt, GraphQLString } from "graphql";
 
 import { JoinType, RootJoinType, single, many, execute } from "../lib";
@@ -56,17 +56,17 @@ const Author = new JoinType({
         return {
             id: JoinType.field({columnName: "id", type: GraphQLInt}),
             name: JoinType.field({columnName: "name", type: GraphQLString}),
-            books: many(
-                Book,
-                (request, {query: authorQuery}) => ({
+            books: many({
+                target: Book,
+                select: (request, {query: authorQuery}) => ({
                     query: knex("book").join(
                         authorQuery.select("author.id").distinct().as("author"),
                         "book.author_id",
                         "author.id"
                     )
                 }),
-                {"id": "authorId"}
-            )
+                join: {"id": "authorId"}
+            })
         };
     },
 
@@ -81,17 +81,17 @@ const Book = new JoinType({
             id: JoinType.field({columnName: "id", type: GraphQLInt}),
             title: JoinType.field({columnName: "title", type: GraphQLString}),
             authorId: JoinType.field({columnName: "author_id", type: GraphQLInt}),
-            author: single(
-                Author,
-                (request, {query: bookQuery}) => ({
+            author: single({
+                target: Author,
+                select: (request, {query: bookQuery}) => ({
                     query: knex("author").join(
                         bookQuery.select("book.author_id").distinct().as("book"),
                         "author.id",
                         "book.author_id"
                     )
                 }),
-                {"authorId": "id"}
-            )
+                join: {"authorId": "id"}
+            })
         };
     },
 
@@ -104,19 +104,22 @@ const Root = new RootJoinType({
 
     fields() {
         return {
-            "books": many(Book, () => ({query: knex("book")})),
-            "author": single(Author, request => {
-                let authors = knex("author");
+            "books": many({target: Book, select: () => ({query: knex("book")})}),
+            "author": single({
+                target: Author,
+                select: request => {
+                    let authors = knex("author");
 
-                const authorId = parseInt(request.args["id"], 10);
-                if (authorId != null) {
-                    authors = authors.where("id", "=", authorId);
+                    const authorId = parseInt(request.args["id"], 10);
+                    if (authorId != null) {
+                        authors = authors.where("id", "=", authorId);
+                    }
+
+                    return {query: authors};
                 }
-
-                return {query: authors};
-            }, {})
+            })
         };
     }
 });
 
-extend(exports, testCases(query => execute(Root, query)));
+exports[module.filename] = testCases(query => execute(Root, query));

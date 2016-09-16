@@ -13,11 +13,10 @@ function executeRequest(root, request) {
     return Promise.resolve(root.fetch(request)).then(result => result[0].value);
 }
 
-// TODO: pass (just optional?) relationship arguments as an object
-export function many(target, generateContext, join, args) {
+export function many({target, select, join, args}={}) {
     return new Relationship({
         target,
-        generateContext,
+        generateContext: select,
         join,
         args,
         processResults: x => x,
@@ -25,10 +24,10 @@ export function many(target, generateContext, join, args) {
     });
 }
 
-export function single(target, generateContext, join, args) {
+export function single({target, select, join, args}={}) {
     return new Relationship({
         target,
-        generateContext,
+        generateContext: select,
         join,
         args,
         processResults: singleValue,

@@ -1,4 +1,4 @@
-import { extend, fromPairs } from "lodash";
+import { fromPairs } from "lodash";
 import { graphql, GraphQLSchema, GraphQLInt, GraphQLString } from "graphql";
 
 import { JoinType, RootJoinType, single, many, execute } from "../lib";
@@ -32,11 +32,11 @@ const Author = new JoinType({
         return {
             id: JoinType.field({name: "id", type: GraphQLInt}),
             name: JoinType.field({name: "name", type: GraphQLString}),
-            books: many(
-                Book,
-                () => allBooks,
-                {"id": "authorId"}
-            )
+            books: many({
+                target: Book,
+                select: () => allBooks,
+                join: {"id": "authorId"}
+            })
         };
     },
 
@@ -51,11 +51,11 @@ const Book = new JoinType({
             id: JoinType.field({name: "id", type: GraphQLInt}),
             title: JoinType.field({name: "title", type: GraphQLString}),
             authorId: JoinType.field({name: "authorId", type: GraphQLInt}),
-            author: single(
-                Author,
-                () => allAuthors,
-                {"authorId": "id"}
-            )
+            author: single({
+                target: Author,
+                select: () => allAuthors,
+                join: {"authorId": "id"}
+            })
         };
     },
 
@@ -68,20 +68,23 @@ const Root = new RootJoinType({
 
     fields() {
         return {
-            "books": many(Book, () => allBooks),
-            "author": single(Author, request => {
-                let authors = allAuthors;
+            "books": many({target: Book, select: () => allBooks}),
+            "author": single({
+                target: Author,
+                select: request => {
+                    let authors = allAuthors;
 
-                // TODO: remove the need to parseInt
-                const authorId = parseInt(request.args["id"], 10);
-                if (authorId != null) {
-                    authors = authors.filter(author => author.id === authorId);
+                    // TODO: remove the need to parseInt
+                    const authorId = parseInt(request.args["id"], 10);
+                    if (authorId != null) {
+                        authors = authors.filter(author => author.id === authorId);
+                    }
+
+                    return authors;
                 }
-
-                return authors;
             })
         };
     }
 });
 
-extend(exports, testCases(query => execute(Root, query)));
+exports[module.filename] = testCases(query => execute(Root, query));

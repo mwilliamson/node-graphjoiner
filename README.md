@@ -77,15 +77,19 @@ const Root = new RootJoinType({
 
     fields() {
         return {
-            "books": many(Book, request => {
-                let books = knex("book");
+            "books": many({
+                target: Book,
+                select: request => {
+                    let books = knex("book");
 
-                if ("genre" in request.args) {
-                    books = books.where("genre", "=", request.args["genre"]);
-                }
+                    if ("genre" in request.args) {
+                        books = books.where("genre", "=", request.args["genre"]);
+                    }
 
-                return {query: books};
-            }, {}, {genre: {type: GraphQLString}})
+                    return {query: books};
+                },
+                args: {genre: {type: GraphQLString}}
+            })
         };
     }
 });
@@ -110,17 +114,17 @@ const Book = new JoinType({
             title: JoinType.field({columnName: "title", type: GraphQLString}),
             genre: JoinType.field({columnName: "genre", type: GraphQLString}),
             authorId: JoinType.field({columnName: "author_id", type: GraphQLInt}),
-            author: single(
-                Author,
-                (request, {query: bookQuery}) => ({
+            author: single({
+                target: Author,
+                select: (request, {query: bookQuery}) => ({
                     query: knex("author").join(
                         bookQuery.select("book.author_id").distinct().as("book"),
                         "author.id",
                         "book.author_id"
                     )
                 }),
-                {"authorId": "id"}
-            )
+                join: {"authorId": "id"}
+           } )
         };
     },
 
@@ -205,15 +209,19 @@ const Root = new RootJoinType({
 
     fields() {
         return {
-            "books": many(Book, request => {
-                let books = knex("book");
+            "books": many({
+                target: Book,
+                select: request => {
+                    let books = knex("book");
 
-                if ("genre" in request.args) {
-                    books = books.where("genre", "=", request.args["genre"]);
-                }
+                    if ("genre" in request.args) {
+                        books = books.where("genre", "=", request.args["genre"]);
+                    }
 
-                return {query: books};
-            }, {}, {genre: {type: GraphQLString}})
+                    return {query: books};
+                },
+                args: {genre: {type: GraphQLString}}
+            })
         };
     }
 });
@@ -239,17 +247,17 @@ const Book = new JoinType({
             title: JoinType.field({columnName: "title", type: GraphQLString}),
             genre: JoinType.field({columnName: "genre", type: GraphQLString}),
             authorId: JoinType.field({columnName: "author_id", type: GraphQLInt}),
-            author: single(
-                Author,
-                (request, {query: bookQuery}) => ({
+            author: single({
+                target: Author,
+                select: (request, {query: bookQuery}) => ({
                     query: knex("author").join(
                         bookQuery.select("book.author_id").distinct().as("book"),
                         "author.id",
                         "book.author_id"
                     )
                 }),
-                {"authorId": "id"}
-            )
+                join: {"authorId": "id"}
+            })
         };
     },
 
@@ -298,17 +306,17 @@ const Author = new JoinType({
         return {
             id: JoinType.field({columnName: "id", type: GraphQLInt}),
             name: JoinType.field({columnName: "name", type: GraphQLString}),
-            books: many(
-                Book,
-                (request, {query: authorQuery}) => ({
+            books: many({
+                target: Book,
+                select: (request, {query: authorQuery}) => ({
                     query: knex("book").join(
                         authorQuery.select("author.id").distinct().as("author"),
                         "book.author_id",
                         "author.id"
                     )
                 }),
-                {"id": "authorId"}
-            )
+                join: {"id": "authorId"}
+            })
         };
     },
 
