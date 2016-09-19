@@ -70,7 +70,10 @@ class Relationship {
         this._join = toPairs(options.join || {});
         this._args = options.args || {};
         this._processResults = options.processResults;
-        this.parentJoinKeys = this._join.map(pair => pair[0]);
+        this.parentJoinSelection = this._join.map(([parentKey]) => createRequest({
+            fieldName: parentKey,
+            key: parentKey
+        }));
         this._wrapType = options.wrapType;
     }
 
@@ -88,7 +91,7 @@ class Relationship {
         .then(results =>
             new RelationshipResults({
                 results,
-                parentJoinKeys: this.parentJoinKeys,
+                parentJoinKeys: this.parentJoinSelection.map(field => field.key),
                 processResults: this._processResults
             })
         );
@@ -139,11 +142,7 @@ export class JoinType {
 
         const joinToChildrenSelection = flatMap(
             relationshipSelection,
-            field => fields[field.fieldName].parentJoinKeys.map(key => createRequest({
-                // TODO: generate key
-                fieldName: key,
-                key: key
-            }))
+            field => fields[field.fieldName].parentJoinSelection
         );
         const immediateSelection = uniq(requestedImmediateSelection.concat(joinToParentSelection).concat(joinToChildrenSelection));
         const immediatesRequest = {...request, selection: immediateSelection};
