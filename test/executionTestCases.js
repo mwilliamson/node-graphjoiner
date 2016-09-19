@@ -142,5 +142,70 @@ export const testCases = (execute) => ({
                 }
             })
         );
+    },
+    
+    "top-level relationship field aliases": () => {
+        const query = `
+            {
+                wodehouse: author(id: 1) {
+                    name
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "wodehouse": {
+                    "name": "PG Wodehouse"
+                }
+            })
+        );
+    },
+    
+    "can alias same top-level field multiple times with different arguments": () => {
+        const query = `
+            {
+                wodehouse: author(id: 1) {
+                    name
+                }
+                heller: author(id: 2) {
+                    name
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "wodehouse": {
+                    "name": "PG Wodehouse"
+                },
+                "heller": {
+                    "name": "Joseph Heller"
+                }
+            })
+        );
+    },
+    
+    "nested relationship field aliases": () => {
+        const query = `
+            {
+                author(id: 1) {
+                    b: books {
+                        title
+                    }
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "author": {
+                    "b": [
+                        {"title": "Leave It to Psmith"},
+                        {"title": "Right Ho, Jeeves"},
+                    ]
+                }
+            })
+        );
     }
 });

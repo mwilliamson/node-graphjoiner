@@ -97,7 +97,7 @@ class Relationship {
 
     toGraphQLField() {
         // TODO: differentiate between root and non-root types properly
-        const resolve = this._join.length !== 0 ? undefined : (source, args, context, info) => {
+        const resolve = this._join.length !== 0 ? resolveField : (source, args, context, info) => {
             const request = requestFromGraphqlAst(info.fieldASTs[0]);
             return this.fetch(request, null).then(results => results.get([]));
         };
@@ -147,8 +147,7 @@ export class JoinType {
             return Promise.all(map(relationshipSelection, fieldRequest => {
                 return fields[fieldRequest.fieldName].fetch(fieldRequest, select).then(children => {
                     results.forEach(result => {
-                        // TODO: change to fieldRequest.key
-                        result[fieldRequest.fieldName] = children.get(result);
+                        result[fieldRequest.key] = children.get(result);
                     })
                 });
             })).then(() => results.map(result => ({
@@ -175,13 +174,15 @@ JoinType.field = function field(options) {
         toGraphQLField() {
             return {
                 type: options.type,
-                resolve(source, args, context, info) {
-                    return source[requestedFieldKey(info.fieldASTs[0])];
-                }
+                resolve: resolveField
             };
         }
     };
 };
+
+function resolveField(source, args, context, info) {
+    return source[requestedFieldKey(info.fieldASTs[0])];
+}
 
 export class RootJoinType extends JoinType {
     constructor(options) {
