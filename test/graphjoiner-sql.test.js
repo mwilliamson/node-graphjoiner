@@ -40,8 +40,8 @@ exports.beforeEach = () => {
 
 function fetchImmediatesFromQuery(request, {query}) {
     const fields = this.fields();
-    const requestedColumns = request.requestedFields.map(field => fields[field].columnName);
-    const columnsToFields = fromPairs(zip(requestedColumns, request.requestedFields));
+    const requestedColumns = request.selection.map(field => fields[field.fieldName].columnName);
+    const columnsToFields = fromPairs(zip(requestedColumns, request.selection.map(field => field.fieldName)));
     return query.select(request.requestedColumns).then(records =>
         records.map(record =>
             mapKeys(record, (value, name) => columnsToFields[name])

@@ -18,7 +18,7 @@ const allBooks = [
 ];
 
 function fetchImmediatesFromObj(request, objs) {
-    const requestedProperties = request.requestedFields.map(field => this.fields()[field].name);
+    const requestedProperties = request.selection.map(field => this.fields()[field.fieldName].name);
 
     function readObj(obj) {
         return fromPairs(requestedProperties.map(property => [property, obj[property]]));

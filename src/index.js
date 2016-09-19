@@ -75,7 +75,8 @@ class Relationship {
     }
 
     fetch(request, selectParent) {
-        const childRequest = {...request, joinFields: this._join.map(pair => pair[1])};
+        // TODO: generate field name
+        const childRequest = {...request, joinSelection: this._join.map(pair => createRequest({fieldName: pair[1]}))};
         return Promise.resolve(this._select(request, selectParent)).then(select =>
             this._target.fetch(childRequest, select)
         )
@@ -121,31 +122,30 @@ export class JoinType {
     fetch(request, select) {
         const fields = this.fields();
 
-        const requestedFields = request.requestedFields;
-        const [requestedRelationshipFields, requestedImmediateFields] = partition(
-            requestedFields,
-            field => fields[field] instanceof Relationship
+        const [relationshipSelection, requestedImmediateSelection] = partition(
+            request.selection,
+            field => fields[field.fieldName] instanceof Relationship
         );
 
-        const joinToChildrenFields = flatMap(requestedRelationshipFields, field => fields[field].parentJoinKeys);
-        const fetchFields = uniq(requestedImmediateFields.concat(request.joinFields).concat(joinToChildrenFields));
-        // TODO: add actual fields rather than names?
-        const immediatesRequest = {...request, requestedFields: fetchFields};
+        const joinToChildrenSelection = flatMap(
+            relationshipSelection,
+            field => fields[field.fieldName].parentJoinKeys.map(key => createRequest({
+                // TODO: generate field name
+                fieldName: key
+            }))
+        );
+        const immediateSelection = uniq(requestedImmediateSelection.concat(request.joinSelection).concat(joinToChildrenSelection));
+        const immediatesRequest = {...request, selection: immediateSelection};
         return Promise.resolve(this.fetchImmediates(immediatesRequest, select)).then(results => {
-            return Promise.all(map(this.fields(), (field, fieldName) => {
-                if (field instanceof Relationship) {
-                    const fieldRequest = request.children[fieldName];
-                    if (fieldRequest != null) {
-                        return field.fetch(fieldRequest, select).then(children => {
-                            results.forEach(result => {
-                                result[fieldName] = children.get(result);
-                            })
-                        });
-                    }
-                }
+            return Promise.all(map(relationshipSelection, fieldRequest => {
+                return fields[fieldRequest.fieldName].fetch(fieldRequest, select).then(children => {
+                    results.forEach(result => {
+                        result[fieldRequest.fieldName] = children.get(result);
+                    })
+                });
             })).then(() => results.map(result => ({
-                value: fromPairs(request.requestedFields.map(field => [field, result[field]])),
-                joinValues: request.joinFields.map(joinField => result[joinField])
+                value: fromPairs(request.selection.map(field => [field.fieldName, result[field.fieldName]])),
+                joinValues: request.joinSelection.map(joinField => result[joinField.fieldName])
             })));
         });
     }
@@ -180,23 +180,27 @@ export class RootJoinType extends JoinType {
 }
 
 function requestFromGraphqlAst(ast) {
-    const children = graphqlChildren(ast);
-    const requestedFields = Object.keys(children);
-
-    return {
+    return createRequest({
+        fieldName: ast.kind === "Field" ? ast.name.value : null,
         args: fromPairs(map(ast.arguments, argument => [argument.name.value, argument.value.value])),
-        children,
-        requestedFields,
-        joinFields: []
-    };
+        selection: graphqlChildren(ast)
+    });
 }
 
 function graphqlChildren(ast) {
     if (ast.selectionSet) {
-        return fromPairs(ast.selectionSet.selections.map(selection =>
-            [selection.name.value, requestFromGraphqlAst(selection)]
-        ));
+        return ast.selectionSet.selections.map(requestFromGraphqlAst);
     } else {
         return [];
     }
+}
+
+function createRequest(request) {
+    return {
+        fieldName: null,
+        args: {},
+        selection: [],
+        joinSelection: [],
+        ...request
+    };
 }
