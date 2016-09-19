@@ -75,8 +75,14 @@ class Relationship {
     }
 
     fetch(request, selectParent) {
-        // TODO: generate field name
-        const childRequest = {...request, joinSelection: this._join.map(pair => createRequest({fieldName: pair[1]}))};
+        const childRequest = {
+            ...request,
+            joinSelection: this._join.map(pair => createRequest({
+                fieldName: pair[1],
+                // TODO: generate key
+                key: pair[1]
+            }))
+        };
         return Promise.resolve(this._select(request, selectParent)).then(select =>
             this._target.fetch(childRequest, select)
         )
@@ -130,8 +136,9 @@ export class JoinType {
         const joinToChildrenSelection = flatMap(
             relationshipSelection,
             field => fields[field.fieldName].parentJoinKeys.map(key => createRequest({
-                // TODO: generate field name
-                fieldName: key
+                // TODO: generate key
+                fieldName: key,
+                key: key
             }))
         );
         const immediateSelection = uniq(requestedImmediateSelection.concat(request.joinSelection).concat(joinToChildrenSelection));
@@ -140,11 +147,12 @@ export class JoinType {
             return Promise.all(map(relationshipSelection, fieldRequest => {
                 return fields[fieldRequest.fieldName].fetch(fieldRequest, select).then(children => {
                     results.forEach(result => {
+                        // TODO: change to fieldRequest.key
                         result[fieldRequest.fieldName] = children.get(result);
                     })
                 });
             })).then(() => results.map(result => ({
-                value: fromPairs(request.selection.map(field => [field.fieldName, result[field.fieldName]])),
+                value: fromPairs(request.selection.map(field => [field.key, result[field.key]])),
                 joinValues: request.joinSelection.map(joinField => result[joinField.fieldName])
             })));
         });
@@ -165,7 +173,12 @@ JoinType.field = function field(options) {
     return {
         ...options,
         toGraphQLField() {
-            return {type: options.type};
+            return {
+                type: options.type,
+                resolve(source, args, context, info) {
+                    return source[requestedFieldKey(info.fieldASTs[0])];
+                }
+            };
         }
     };
 };
@@ -180,8 +193,10 @@ export class RootJoinType extends JoinType {
 }
 
 function requestFromGraphqlAst(ast) {
+    const isField = ast.kind === "Field";
     return createRequest({
-        fieldName: ast.kind === "Field" ? ast.name.value : null,
+        fieldName: isField ? requestedFieldName(ast) : null,
+        key: isField ? requestedFieldKey(ast) : null,
         args: fromPairs(map(ast.arguments, argument => [argument.name.value, argument.value.value])),
         selection: graphqlChildren(ast)
     });
@@ -203,4 +218,12 @@ function createRequest(request) {
         joinSelection: [],
         ...request
     };
+}
+
+function requestedFieldName(ast) {
+    return ast.name.value;
+}
+
+function requestedFieldKey(ast) {
+    return ast.alias ? ast.alias.value : requestedFieldName(ast);
 }

@@ -124,5 +124,23 @@ export const testCases = (execute) => ({
                 },
             })
         );
+    },
+    
+    "scalar field aliases": () => {
+        const query = `
+            {
+                author(id: 1) {
+                    authorName: name
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "author": {
+                    "authorName": "PG Wodehouse"
+                }
+            })
+        );
     }
 });
