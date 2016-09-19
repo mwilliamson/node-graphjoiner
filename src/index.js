@@ -82,7 +82,7 @@ class Relationship {
             ...request,
             joinSelection: this._join.map(pair => createRequest({
                 fieldName: pair[1],
-                key: pair[1]
+                key: "_graphjoiner_joinToParentKey_" + pair[1]
             }))
         };
         return Promise.resolve(this._select(request, selectParent)).then(select =>
@@ -135,16 +135,11 @@ export class JoinType {
             field => fields[field.fieldName] instanceof Relationship
         );
         
-        const joinToParentSelection = request.joinSelection.map(joinSelection => ({
-            ...joinSelection,
-            key: "_graphjoiner_joinToParentKey_" + joinSelection.key
-        }));
-
         const joinToChildrenSelection = flatMap(
             relationshipSelection,
             field => fields[field.fieldName].parentJoinSelection
         );
-        const immediateSelection = uniq(requestedImmediateSelection.concat(joinToParentSelection).concat(joinToChildrenSelection));
+        const immediateSelection = uniq(requestedImmediateSelection.concat(request.joinSelection).concat(joinToChildrenSelection));
         const immediatesRequest = {...request, selection: immediateSelection};
         return Promise.resolve(this.fetchImmediates(immediatesRequest, select)).then(results => {
             return Promise.all(map(relationshipSelection, fieldRequest => {
@@ -155,7 +150,7 @@ export class JoinType {
                 });
             })).then(() => results.map(result => ({
                 value: fromPairs(request.selection.map(field => [field.key, result[field.key]])),
-                joinValues: joinToParentSelection.map(joinField => result[joinField.key])
+                joinValues: request.joinSelection.map(joinField => result[joinField.key])
             })));
         });
     }
