@@ -72,7 +72,7 @@ class Relationship {
         this._processResults = options.processResults;
         this.parentJoinSelection = this._join.map(([parentKey]) => createRequest({
             fieldName: parentKey,
-            key: parentKey
+            key: "_graphjoiner_joinToChildrenKey_" + parentKey
         }));
         this._wrapType = options.wrapType;
     }
