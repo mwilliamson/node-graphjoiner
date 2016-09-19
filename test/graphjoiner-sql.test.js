@@ -42,8 +42,7 @@ function fetchImmediatesFromQuery(request, {query}) {
     const fields = this.fields();
     const requestedColumns = request.selection.map(field => fields[field.fieldName].columnName);
     const columnsToFields = fromPairs(zip(requestedColumns, request.selection.map(field => field.key)));
-    // TODO: filter columns
-    return query.then(records =>
+    return query.clone().select(requestedColumns).then(records =>
         records.map(record =>
             mapKeys(record, (value, name) => columnsToFields[name])
         )
@@ -61,7 +60,7 @@ const Author = new JoinType({
                 target: Book,
                 select: (request, {query: authorQuery}) => ({
                     query: knex("book").join(
-                        authorQuery.select("author.id").distinct().as("author"),
+                        authorQuery.clone().distinct("author.id").as("author"),
                         "book.author_id",
                         "author.id"
                     )
@@ -86,7 +85,7 @@ const Book = new JoinType({
                 target: Author,
                 select: (request, {query: bookQuery}) => ({
                     query: knex("author").join(
-                        bookQuery.select("book.author_id").distinct().as("book"),
+                        bookQuery.clone().select("book.author_id").distinct().as("book"),
                         "author.id",
                         "book.author_id"
                     )
