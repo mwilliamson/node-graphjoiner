@@ -80,9 +80,9 @@ class Relationship {
     fetch(request, selectParent) {
         const childRequest = {
             ...request,
-            joinSelection: this._join.map(pair => createRequest({
-                fieldName: pair[1],
-                key: "_graphjoiner_joinToParentKey_" + pair[1]
+            joinSelection: this._join.map(([_, childKey]) => createRequest({
+                fieldName: childKey,
+                key: "_graphjoiner_joinToParentKey_" + childKey
             }))
         };
         return Promise.resolve(this._select(request, selectParent)).then(select =>
