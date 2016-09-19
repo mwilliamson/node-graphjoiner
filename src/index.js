@@ -79,7 +79,6 @@ class Relationship {
             ...request,
             joinSelection: this._join.map(pair => createRequest({
                 fieldName: pair[1],
-                // TODO: generate key
                 key: pair[1]
             }))
         };
@@ -132,6 +131,11 @@ export class JoinType {
             request.selection,
             field => fields[field.fieldName] instanceof Relationship
         );
+        
+        const joinToParentSelection = request.joinSelection.map(joinSelection => ({
+            ...joinSelection,
+            key: "_graphjoiner_joinToParentKey_" + joinSelection.key
+        }));
 
         const joinToChildrenSelection = flatMap(
             relationshipSelection,
@@ -141,7 +145,7 @@ export class JoinType {
                 key: key
             }))
         );
-        const immediateSelection = uniq(requestedImmediateSelection.concat(request.joinSelection).concat(joinToChildrenSelection));
+        const immediateSelection = uniq(requestedImmediateSelection.concat(joinToParentSelection).concat(joinToChildrenSelection));
         const immediatesRequest = {...request, selection: immediateSelection};
         return Promise.resolve(this.fetchImmediates(immediatesRequest, select)).then(results => {
             return Promise.all(map(relationshipSelection, fieldRequest => {
@@ -152,7 +156,7 @@ export class JoinType {
                 });
             })).then(() => results.map(result => ({
                 value: fromPairs(request.selection.map(field => [field.key, result[field.key]])),
-                joinValues: request.joinSelection.map(joinField => result[joinField.fieldName])
+                joinValues: joinToParentSelection.map(joinField => result[joinField.key])
             })));
         });
     }

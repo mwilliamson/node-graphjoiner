@@ -143,6 +143,29 @@ export const testCases = (execute) => ({
             })
         );
     },
+
+    "field alias in child does not clash with join fields": () => {
+        const query = `
+            {
+                author(id: 1) {
+                    books {
+                        authorId: title
+                    }
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "author": {
+                    "books": [
+                        {"authorId": "Leave It to Psmith"},
+                        {"authorId": "Right Ho, Jeeves"},
+                    ],
+                },
+            })
+        );
+    },
     
     "top-level relationship field aliases": () => {
         const query = `
