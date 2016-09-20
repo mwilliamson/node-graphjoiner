@@ -1,10 +1,55 @@
+// @flow
+
 import { flatMap, forEach, fromPairs, map, mapValues, partition, toPairs, uniq } from "lodash";
 import { parse } from "graphql/language";
 import { GraphQLObjectType, GraphQLList } from "graphql";
 
 import JoinMap from "./JoinMap";
 
-export function execute(root, query) {
+type JoinKeys = {[parent: string]: string};
+type Args = {[key: string]: mixed}
+type RelationshipConfig = {
+    target: JoinType,
+    select: (request: Request, selectParent: mixed) => mixed,
+    join: JoinKeys,
+    args: Args
+};
+type Info = {
+    fieldASTs: Array<GraphQLAst>
+};
+type GraphQLAst = 
+    {
+        kind: "Field",
+        alias: ?{value: string},
+        name: {value: string},
+        arguments: {
+            name: {value: string},
+            value: {value: string}
+        },
+        selectionSet: {
+            selections: Array<GraphQLAst>
+        }
+    };
+
+type FieldDefinition = Relationship;
+
+type RequestBase = {
+    args: Args,
+    selection: Array<Request>,
+    joinSelection: Array<Request>
+};
+
+type Request = RequestBase & {
+    key: ?string,
+    fieldName: ?string
+};
+
+type FieldRequest = RequestBase & {
+    key: string,
+    fieldName: string
+};
+
+export function execute(root: JoinType, query: string) {
     const request = requestFromGraphqlAst(parse(query).definitions[0]);
     return executeRequest(root, request);
 }
@@ -13,7 +58,7 @@ function executeRequest(root, request) {
     return Promise.resolve(root.fetch(request)).then(result => result[0].value);
 }
 
-export function many({target, select, join, args}={}) {
+export function many({target, select, join, args}: RelationshipConfig = {}) {
     return new Relationship({
         target,
         select,
@@ -24,7 +69,7 @@ export function many({target, select, join, args}={}) {
     });
 }
 
-export function single({target, select, join, args}={}) {
+export function single({target, select, join, args}: RelationshipConfig = {}) {
     return new Relationship({
         target,
         select,
@@ -46,6 +91,10 @@ function singleValue(values) {
 }
 
 class RelationshipResults {
+    _results: JoinMap;
+    _processResults: (results: Array<mixed>) => mixed;
+    _parentJoinKeys: Array<string>;
+    
     constructor(options) {
         this._results = new JoinMap(options.results);
         this._processResults = options.processResults;
@@ -64,7 +113,15 @@ class RelationshipResults {
 }
 
 class Relationship {
-    constructor(options) {
+    _target: JoinType;
+    _select: (request: Request, selectParent: mixed) => mixed;
+    _join: Array<[string, string]>;
+    _args: Args;
+    _processResults: (results: Array<mixed>) => mixed;
+    parentJoinSelection: Array<FieldRequest>;
+    _wrapType: Function;
+    
+    constructor(options: *) {
         this._target = options.target;
         this._select = options.select;
         this._join = toPairs(options.join || {});
@@ -77,7 +134,7 @@ class Relationship {
         this._wrapType = options.wrapType;
     }
 
-    fetch(request, selectParent) {
+    fetch(request: Request, selectParent: mixed) {
         const childRequest = {
             ...request,
             joinSelection: this._join.map(([_, childKey]) => createRequest({
@@ -99,7 +156,7 @@ class Relationship {
 
     toGraphQLField() {
         // TODO: differentiate between root and non-root types properly
-        const resolve = this._join.length !== 0 ? resolveField : (source, args, context, info) => {
+        const resolve = this._join.length !== 0 ? resolveField : (source: *, args: *, context: *, info: Info) => {
             const request = requestFromGraphqlAst(info.fieldASTs[0]);
             return this.fetch(request, null).then(results => results.get([]));
         };
@@ -112,14 +169,20 @@ class Relationship {
 }
 
 export class JoinType {
-    constructor(options) {
+    _name: string;
+    fetchImmediates: Function;
+    _generateFields: () => {[name: string]: FieldDefinition};
+    _fields: null | {[name: string]: FieldDefinition};
+    _graphQLType: GraphQLObjectType;
+    
+    constructor(options: {name: string, fetchImmediates: Function, fields: () => {[name: string]: FieldDefinition}}) {
         this._name = options.name;
         this.fetchImmediates = options.fetchImmediates;
         this._generateFields = options.fields;
         this._fields = null;
     }
 
-    fields() {
+    fields(): {[name: string]: FieldDefinition} {
         if (this._fields === null) {
             // TODO: add name to field definitions?
             this._fields = this._generateFields();
@@ -127,7 +190,7 @@ export class JoinType {
         return this._fields;
     }
 
-    fetch(request, select) {
+    fetch(request: Request, select: mixed) {
         const fields = this.fields();
 
         const [relationshipSelection, requestedImmediateSelection] = partition(
@@ -164,26 +227,26 @@ export class JoinType {
         }
         return this._graphQLType;
     }
+    
+    static field(options) {
+        return {
+            ...options,
+            toGraphQLField() {
+                return {
+                    type: options.type,
+                    resolve: resolveField
+                };
+            }
+        };
+    }
 }
 
-JoinType.field = function field(options) {
-    return {
-        ...options,
-        toGraphQLField() {
-            return {
-                type: options.type,
-                resolve: resolveField
-            };
-        }
-    };
-};
-
-function resolveField(source, args, context, info) {
+function resolveField(source: Object, args: *, context: *, info: Info) {
     return source[requestedFieldKey(info.fieldASTs[0])];
 }
 
 export class RootJoinType extends JoinType {
-    constructor(options) {
+    constructor(options: Object) {
         super({
             ...options,
             fetchImmediates: () => [{}]
@@ -191,7 +254,7 @@ export class RootJoinType extends JoinType {
     }
 }
 
-function requestFromGraphqlAst(ast) {
+function requestFromGraphqlAst(ast: GraphQLAst) {
     const isField = ast.kind === "Field";
     return createRequest({
         fieldName: isField ? requestedFieldName(ast) : null,
@@ -209,13 +272,21 @@ function graphqlChildren(ast) {
     }
 }
 
-function createRequest(request) {
+type CreateRequest = {
+    key?: ?string,
+    fieldName?: ?string,
+    args?: ?Args,
+    selection?: ?Array<Request>,
+    joinSelection?: ?Array<Request>
+};
+
+function createRequest(request: CreateRequest): Request {
     return {
-        fieldName: null,
-        args: {},
-        selection: [],
-        joinSelection: [],
-        ...request
+        key: request.key == null ? null : request.key,
+        fieldName: request.fieldName == null ? null : request.fieldName,
+        args: request.args || {},
+        selection: request.selection || [],
+        joinSelection: request.joinSelection || []
     };
 }
 
@@ -223,6 +294,6 @@ function requestedFieldName(ast) {
     return ast.name.value;
 }
 
-function requestedFieldKey(ast) {
+function requestedFieldKey(ast: GraphQLAst) {
     return ast.alias ? ast.alias.value : requestedFieldName(ast);
 }
