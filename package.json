@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mocha 'test/**/*.test.js'",
+    "test": "flow && mocha 'test/**/*.test.js'",
     "prepublish": "npm run build",
     "build": "babel src --out-dir lib --source-maps",
     "watch": "npm run build -- --watch"
@@ -29,9 +29,11 @@
   "homepage": "https://github.com/mwilliamson/node-graphjoiner",
   "devDependencies": {
     "babel-cli": "^6.14.0",
+    "babel-plugin-transform-flow-strip-types": "^6.14.0",
     "babel-plugin-transform-object-rest-spread": "^6.8.0",
     "babel-preset-es2015": "^6.14.0",
     "babel-register": "^6.14.0",
+    "flow-bin": "^0.32.0",
     "knex": "^0.11.10",
     "lodash": "^4.15.0",
     "mocha": "^3.0.2",
@@ -43,6 +45,7 @@
       "es2015"
     ],
     "plugins": [
+      "transform-flow-strip-types",
       "transform-object-rest-spread"
     ],
     "ignore": [

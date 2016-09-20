@@ -1,7 +1,13 @@
-import Immutable from "immutable";
+// @flow
 
-export function toListMap(collection, generatePair) {
-    return Immutable.Map().withMutations(map =>
+import {Map} from "immutable";
+import type {Iterable} from "immutable";
+
+export function toListMap<V1, K2, V2>(
+    collection: Iterable<*, V1>,
+    generatePair: (value: V1) => [K2, V2]
+): Map<K2, Array<V2>> {
+    return Map().withMutations(map =>
         collection.forEach(element => {
             let [key, value] = generatePair(element);
             if (!map.has(key)) {
