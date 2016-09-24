@@ -96,8 +96,8 @@ const Root = new RootJoinType({
 
 function fetchImmediatesFromQuery(request, {query}) {
     const fields = this.fields();
-    const requestedColumns = request.selection.map(field => fields[field.fieldName].columnName);
-    const columnsToFields = fromPairs(zip(requestedColumns, request.selection.map(field => field.key)));
+    const requestedColumns = request.selections.map(selection => fields[selection.fieldName].columnName);
+    const columnsToFields = fromPairs(zip(requestedColumns, request.selections.map(selection => selection.key)));
     return query.clone().select(requestedColumns).then(records =>
         records.map(record =>
             mapKeys(record, (value, name) => columnsToFields[name])
@@ -285,8 +285,8 @@ original GraphQL query, or are required as part of the join.
 ```javascript
 function fetchImmediatesFromQuery(request, {query}) {
     const fields = this.fields();
-    const requestedColumns = request.selection.map(field => fields[field.fieldName].columnName);
-    const columnsToFields = fromPairs(zip(requestedColumns, request.selection.map(field => field.key)));
+    const requestedColumns = request.selections.map(selection => fields[selection.fieldName].columnName);
+    const columnsToFields = fromPairs(zip(requestedColumns, request.selections.map(selection => selection.key)));
     return query.clone().select(requestedColumns).then(records =>
         records.map(record =>
             mapKeys(record, (value, name) => columnsToFields[name])
