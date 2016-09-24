@@ -70,7 +70,7 @@ class Relationship {
         this._join = toPairs(options.join || {});
         this._args = options.args || {};
         this._processResults = options.processResults;
-        this.parentJoinSelection = this._join.map(([parentKey]) => createRequest({
+        this.parentJoinSelections = this._join.map(([parentKey]) => createRequest({
             fieldName: parentKey,
             key: "_graphjoiner_joinToChildrenKey_" + parentKey
         }));
@@ -80,7 +80,7 @@ class Relationship {
     fetch(request, selectParent) {
         const childRequest = {
             ...request,
-            joinSelection: this._join.map(([_, childKey]) => createRequest({
+            joinSelections: this._join.map(([_, childKey]) => createRequest({
                 fieldName: childKey,
                 key: "_graphjoiner_joinToParentKey_" + childKey
             }))
@@ -91,7 +91,7 @@ class Relationship {
         .then(results =>
             new RelationshipResults({
                 results,
-                parentJoinKeys: this.parentJoinSelection.map(field => field.key),
+                parentJoinKeys: this.parentJoinSelections.map(field => field.key),
                 processResults: this._processResults
             })
         );
@@ -130,27 +130,27 @@ export class JoinType {
     fetch(request, select) {
         const fields = this.fields();
 
-        const [relationshipSelection, requestedImmediateSelection] = partition(
-            request.selection,
-            field => fields[field.fieldName] instanceof Relationship
+        const [relationshipSelections, requestedImmediateSelections] = partition(
+            request.selections,
+            selection => fields[selection.fieldName] instanceof Relationship
         );
         
-        const joinToChildrenSelection = flatMap(
-            relationshipSelection,
-            field => fields[field.fieldName].parentJoinSelection
+        const joinToChildrenSelections = flatMap(
+            relationshipSelections,
+            selection => fields[selection.fieldName].parentJoinSelections
         );
-        const immediateSelection = requestedImmediateSelection.concat(request.joinSelection).concat(joinToChildrenSelection);
-        const immediatesRequest = {...request, selection: immediateSelection};
+        const immediateSelections = requestedImmediateSelections.concat(request.joinSelections).concat(joinToChildrenSelections);
+        const immediatesRequest = {...request, selections: immediateSelections};
         return Promise.resolve(this.fetchImmediates(immediatesRequest, select)).then(results => {
-            return Promise.all(map(relationshipSelection, fieldRequest => {
+            return Promise.all(map(relationshipSelections, fieldRequest => {
                 return fields[fieldRequest.fieldName].fetch(fieldRequest, select).then(children => {
                     results.forEach(result => {
                         result[fieldRequest.key] = children.get(result);
                     })
                 });
             })).then(() => results.map(result => ({
-                value: fromPairs(request.selection.map(field => [field.key, result[field.key]])),
-                joinValues: request.joinSelection.map(joinField => result[joinField.key])
+                value: fromPairs(request.selections.map(selection => [selection.key, result[selection.key]])),
+                joinValues: request.joinSelections.map(selection => result[selection.key])
             })));
         });
     }
@@ -197,11 +197,11 @@ function requestFromGraphqlAst(ast) {
         fieldName: isField ? requestedFieldName(ast) : null,
         key: isField ? requestedFieldKey(ast) : null,
         args: fromPairs(map(ast.arguments, argument => [argument.name.value, argument.value.value])),
-        selection: graphqlChildren(ast)
+        selections: graphqlSelections(ast)
     });
 }
 
-function graphqlChildren(ast) {
+function graphqlSelections(ast) {
     if (ast.selectionSet) {
         return ast.selectionSet.selections.map(requestFromGraphqlAst);
     } else {
@@ -213,8 +213,8 @@ function createRequest(request) {
     return {
         fieldName: null,
         args: {},
-        selection: [],
-        joinSelection: [],
+        selections: [],
+        joinSelections: [],
         ...request
     };
 }

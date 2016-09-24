@@ -19,9 +19,9 @@ function fetchImmediatesFromObj(request, objs) {
     const fields = this.fields();
     
     function readObj(obj) {
-        return fromPairs(request.selection.map(field => [
-            field.key,
-            obj[fields[field.fieldName].name]
+        return fromPairs(request.selections.map(selection => [
+            selection.key,
+            obj[fields[selection.fieldName].name]
         ]));
     }
     return objs.map(readObj);
