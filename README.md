@@ -95,8 +95,7 @@ const Root = new RootJoinType({
 });
 
 function fetchImmediatesFromQuery(request, {query}) {
-    const fields = this.fields();
-    const requestedColumns = request.selections.map(selection => fields[selection.fieldName].columnName);
+    const requestedColumns = request.selections.map(selection => selection.field.columnName);
     const columnsToFields = fromPairs(zip(requestedColumns, request.selections.map(selection => selection.key)));
     return query.clone().select(requestedColumns).then(records =>
         records.map(record =>
@@ -284,8 +283,7 @@ original GraphQL query, or are required as part of the join.
 
 ```javascript
 function fetchImmediatesFromQuery(request, {query}) {
-    const fields = this.fields();
-    const requestedColumns = request.selections.map(selection => fields[selection.fieldName].columnName);
+    const requestedColumns = request.selections.map(selection => selection.field.columnName);
     const columnsToFields = fromPairs(zip(requestedColumns, request.selections.map(selection => selection.key)));
     return query.clone().select(requestedColumns).then(records =>
         records.map(record =>

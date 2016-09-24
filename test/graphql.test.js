@@ -18,12 +18,10 @@ const allBooks = [
 ];
 
 function fetchImmediatesFromObj(request, objs) {
-    const fields = this.fields();
-    
     function readObj(obj) {
         return fromPairs(request.selections.map(selection => [
             selection.key,
-            obj[fields[selection.fieldName].name]
+            obj[selection.field.name]
         ]));
     }
     return objs.map(readObj);
@@ -99,7 +97,7 @@ const schema = new GraphQLSchema({
 
 function execute(query) {
     return graphql(schema, query).then(result => {
-        assert.ok(!result.errors);
+        assert.equal(result.errors, undefined);
         return result.data;
     });
 }

@@ -16,12 +16,10 @@ const allBooks = [
 ];
 
 function fetchImmediatesFromObj(request, objs) {
-    const fields = this.fields();
-    
     function readObj(obj) {
         return fromPairs(request.selections.map(selection => [
             selection.key,
-            obj[fields[selection.fieldName].name]
+            obj[selection.field.name]
         ]));
     }
     return objs.map(readObj);
