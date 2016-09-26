@@ -109,13 +109,14 @@ const Root = new RootJoinType({
                 select: request => {
                     let authors = knex("author");
 
-                    const authorId = parseInt(request.args["id"], 10);
+                    const authorId = request.args["id"];
                     if (authorId != null) {
                         authors = authors.where("id", "=", authorId);
                     }
 
                     return {query: authors};
-                }
+                },
+                args: {"id": {type: GraphQLInt}}
             })
         };
     }

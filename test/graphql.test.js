@@ -76,7 +76,7 @@ const Root = new RootJoinType({
                 select: request => {
                     let authors = allAuthors;
 
-                    const authorId = parseInt(request.args["id"], 10);
+                    const authorId = request.args["id"];
                     if (authorId != null) {
                         authors = authors.filter(author => author.id === authorId);
                     }

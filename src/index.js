@@ -1,5 +1,6 @@
 import { flatMap, forEach, fromPairs, map, mapValues, partition, toPairs, zip } from "lodash";
 import { parse } from "graphql/language";
+import { getArgumentValues } from "graphql/execution/values";
 import { GraphQLObjectType, GraphQLList } from "graphql";
 
 import JoinMap from "./JoinMap";
@@ -68,7 +69,7 @@ class Relationship {
         this._target = options.target;
         this._select = options.select;
         this._join = toPairs(options.join || {});
-        this._args = options.args || {};
+        this.args = options.args || {};
         this._processResults = options.processResults;
         this._wrapType = options.wrapType;
         this._parentJoinKeys = this._join.map(([parentKey]) => "_graphjoiner_joinToChildrenKey_" + parentKey);
@@ -106,13 +107,13 @@ class Relationship {
     toGraphQLField() {
         // TODO: differentiate between root and non-root types properly
         const resolve = this._join.length !== 0 ? resolveField : (source, args, context, info) => {
-            const request = requestFromGraphqlAst(info.fieldASTs[0], this._target);
+            const request = requestFromGraphqlAst(info.fieldASTs[0], this._target, this);
             return this.fetch(request, null).then(results => results.get([]));
         };
         return {
             type: this._wrapType(this._target.toGraphQLType()),
             resolve: resolve,
-            args: this._args
+            args: this.args
         };
     }
 }
@@ -202,9 +203,23 @@ function requestFromGraphqlAst(ast, root, field) {
     return createRequest({
         field: field,
         key: isField ? requestedFieldKey(ast) : null,
-        args: fromPairs(map(ast.arguments, argument => [argument.name.value, argument.value.value])),
+        args: graphqlArgs(ast, field),
         selections: graphqlSelections(ast, root)
     });
+}
+
+function graphqlArgs(ast, field) {
+    if (field) {
+        const argumentDefinitions = map(field.args, (arg, argName) => ({
+            name: argName,
+            description: arg.description === undefined ? null : arg.description,
+            type: arg.type,
+            defaultValue: arg.defaultValue === undefined ? null : arg.defaultValue
+        }));
+        return getArgumentValues(argumentDefinitions, ast.arguments, {});
+    } else {
+        return {};
+    }
 }
 
 function graphqlSelections(ast, root) {

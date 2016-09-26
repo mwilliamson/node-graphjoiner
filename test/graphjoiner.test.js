@@ -74,14 +74,14 @@ const Root = new RootJoinType({
                 select: request => {
                     let authors = allAuthors;
 
-                    // TODO: remove the need to parseInt
-                    const authorId = parseInt(request.args["id"], 10);
+                    const authorId = request.args["id"];
                     if (authorId != null) {
                         authors = authors.filter(author => author.id === authorId);
                     }
 
                     return authors;
-                }
+                },
+                args: {"id": {type: GraphQLInt}}
             })
         };
     }
