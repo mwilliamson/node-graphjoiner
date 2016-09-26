@@ -87,4 +87,4 @@ const Root = new RootJoinType({
     }
 });
 
-exports[module.filename] = testCases(query => execute(Root, query));
+exports[module.filename] = testCases((...args) => execute(Root, ...args));

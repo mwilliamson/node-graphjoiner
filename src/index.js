@@ -5,8 +5,8 @@ import { GraphQLObjectType, GraphQLList } from "graphql";
 
 import JoinMap from "./JoinMap";
 
-export function execute(root, query) {
-    const request = requestFromGraphqlAst(parse(query).definitions[0], root);
+export function execute(root, query, options={}) {
+    const request = requestFromGraphqlAst(parse(query).definitions[0], root, null, options.variables);
     return executeRequest(root, request);
 }
 
@@ -107,7 +107,7 @@ class Relationship {
     toGraphQLField() {
         // TODO: differentiate between root and non-root types properly
         const resolve = this._join.length !== 0 ? resolveField : (source, args, context, info) => {
-            const request = requestFromGraphqlAst(info.fieldASTs[0], this._target, this);
+            const request = requestFromGraphqlAst(info.fieldASTs[0], this._target, this, info.variableValues);
             return this.fetch(request, null).then(results => results.get([]));
         };
         return {
@@ -198,17 +198,17 @@ export class RootJoinType extends JoinType {
     }
 }
 
-function requestFromGraphqlAst(ast, root, field) {
+function requestFromGraphqlAst(ast, root, field, variables) {
     const isField = ast.kind === "Field";
     return createRequest({
         field: field,
         key: isField ? requestedFieldKey(ast) : null,
-        args: graphqlArgs(ast, field),
-        selections: graphqlSelections(ast, root)
+        args: graphqlArgs(ast, field, variables),
+        selections: graphqlSelections(ast, root, variables)
     });
 }
 
-function graphqlArgs(ast, field) {
+function graphqlArgs(ast, field, variables) {
     if (field) {
         const argumentDefinitions = map(field.args, (arg, argName) => ({
             name: argName,
@@ -216,18 +216,18 @@ function graphqlArgs(ast, field) {
             type: arg.type,
             defaultValue: arg.defaultValue === undefined ? null : arg.defaultValue
         }));
-        return getArgumentValues(argumentDefinitions, ast.arguments, {});
+        return getArgumentValues(argumentDefinitions, ast.arguments, variables);
     } else {
         return {};
     }
 }
 
-function graphqlSelections(ast, root) {
+function graphqlSelections(ast, root, variables) {
     if (ast.selectionSet) {
         const fields = root.fields();
         return ast.selectionSet.selections.map(selection => {
             const field = fields[requestedFieldName(selection)];
-            return requestFromGraphqlAst(selection, field._target, field);
+            return requestFromGraphqlAst(selection, field._target, field, variables);
         });
     } else {
         return [];

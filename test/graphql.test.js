@@ -95,8 +95,8 @@ const schema = new GraphQLSchema({
     query: Root.toGraphQLType()
 });
 
-function execute(query) {
-    return graphql(schema, query).then(result => {
+function execute(query, options={}) {
+    return graphql(schema, query, null, null, options.variables).then(result => {
         assert.equal(result.errors, undefined);
         return result.data;
     });

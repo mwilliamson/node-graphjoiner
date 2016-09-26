@@ -255,5 +255,30 @@ export const testCases = (execute) => ({
                 }
             })
         );
+    },
+    
+    "variable can be used in top level argument": () => {
+        const query = `
+            query getAuthor($authorId: Int) {
+                author(id: $authorId) {
+                    id: name
+                    books {
+                        title
+                    }
+                }
+            }
+        `;
+
+        return execute(query, {variables: {"authorId": 1}}).then(result =>
+            assert.deepEqual(result, {
+                "author": {
+                    "id": "PG Wodehouse",
+                    "books": [
+                        {"title": "Leave It to Psmith"},
+                        {"title": "Right Ho, Jeeves"}
+                    ]
+                }
+            })
+        );
     }
 });
