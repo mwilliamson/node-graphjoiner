@@ -125,6 +125,50 @@ export const testCases = (execute) => ({
             })
         );
     },
+
+    "querying extracted scalar": () => {
+        const query = `
+            {
+                author(id: 1) {
+                    bookTitles
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "author": {
+                    "bookTitles": [
+                        "Leave It to Psmith",
+                        "Right Ho, Jeeves",
+                    ]
+                }
+            })
+        );
+    },
+
+    "querying extracted object": () => {
+        const query = `
+            {
+                book(id: 1) {
+                    booksBySameAuthor {
+                        title
+                    }
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "book": {
+                    "booksBySameAuthor": [
+                        {"title": "Leave It to Psmith"},
+                        {"title": "Right Ho, Jeeves"},
+                    ]
+                }
+            })
+        );
+    },
     
     "scalar field aliases": () => {
         const query = `

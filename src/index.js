@@ -68,27 +68,27 @@ class Relationship {
     constructor(options) {
         this._target = options.target;
         this._select = options.select;
-        this._join = toPairs(options.join || {});
+        this._join = options.join || {};
         this.args = options.args || {};
         this._processResults = options.processResults;
         this._wrapType = options.wrapType;
-        this._parentJoinKeys = this._join.map(([parentKey]) => "_graphjoiner_joinToChildrenKey_" + parentKey);
+        this._parentJoinKeys = map(this._join, (childKey, parentKey) => "_graphjoiner_joinToChildrenKey_" + parentKey);
     }
     
     parentJoinSelections(parent) {
         const fields = parent.fields();
-        return zip(this._join.map(([parentKey]) => parentKey), this._parentJoinKeys).map(([fieldName, key]) => (createRequest({
+        return zip(map(this._join, (childKey, parentKey) => parentKey), this._parentJoinKeys).map(([fieldName, key]) => (createRequest({
             field: fields[fieldName],
             key: key
         })));
     }
 
     fetch(request, selectParent) {
-        const fields = this._target.fields();
+        const joinFields = this._target.joinFields();
         const childRequest = {
             ...request,
-            joinSelections: this._join.map(([_, childKey]) => createRequest({
-                field: fields[childKey],
+            joinSelections: map(this._join, childKey => createRequest({
+                field: joinFields[childKey],
                 key: "_graphjoiner_joinToParentKey_" + childKey
             }))
         };
@@ -106,7 +106,7 @@ class Relationship {
 
     toGraphQLField() {
         // TODO: differentiate between root and non-root types properly
-        const resolve = this._join.length !== 0 ? resolveField : (source, args, context, info) => {
+        const resolve = Object.keys(this._join).length !== 0 ? resolveField : (source, args, context, info) => {
             const request = requestFromGraphqlAst(info.fieldASTs[0], this._target, this, info.variableValues);
             return this.fetch(request, null).then(results => results.get([]));
         };
@@ -115,6 +115,59 @@ class Relationship {
             resolve: resolve,
             args: this.args
         };
+    }
+}
+
+export function extract(relationship, fieldName) {
+    return new Relationship({
+        target: new ScalarJoinType(relationship._target, fieldName),
+        processResults: relationship._processResults,
+        wrapType: relationship._wrapType,
+        select: relationship._select,
+        join: relationship._join,
+        args: relationship.args,
+    });
+}
+
+class ScalarJoinType {
+    constructor(target, fieldName) {
+        this._target = target;
+        this._fieldName = fieldName;
+    }
+    
+    get _field() {
+        return this._target.fields()[this._fieldName];
+    }
+    
+    fields() {
+        if (this._field instanceof Relationship) {
+            return this._field._target.fields();
+        } else {
+            return {};
+        }
+    }
+    
+    joinFields() {
+        return this._target.joinFields();
+    }
+    
+    fetch(request, select) {
+        const fieldRequest = createRequest({
+            key: this._fieldName,
+            field: this._field,
+            selections: request.selections,
+            context: request.context
+        });
+        return this._target.fetch({...request, selections: [fieldRequest]}, select).then(results =>
+            results.map(result => ({
+                value: result.value[this._fieldName],
+                joinValues: result.joinValues
+            }))
+        );
+    }
+    
+    toGraphQLType() {
+        return this._field.toGraphQLField().type;
     }
 }
 
@@ -132,6 +185,10 @@ export class JoinType {
             this._fields = this._generateFields();
         }
         return this._fields;
+    }
+    
+    joinFields() {
+        return this.fields();
     }
 
     fetch(request, select) {

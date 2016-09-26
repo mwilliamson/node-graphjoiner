@@ -1,7 +1,7 @@
 import { fromPairs, mapKeys, zip } from "lodash";
 import { graphql, GraphQLSchema, GraphQLInt, GraphQLString } from "graphql";
 
-import { JoinType, RootJoinType, single, many, execute } from "../lib";
+import { JoinType, RootJoinType, single, many, extract, execute } from "../lib";
 import { testCases } from "./executionTestCases";
 
 import Knex from "knex";
@@ -39,33 +39,31 @@ exports.beforeEach = () => {
 };
 
 function fetchImmediatesFromQuery(request, {query}) {
-    const requestedColumns = request.selections.map(selection => selection.field.columnName);
-    const columnsToFields = fromPairs(zip(requestedColumns, request.selections.map(selection => selection.key)));
-    return query.clone().select(requestedColumns).then(records =>
-        records.map(record =>
-            mapKeys(record, (value, name) => columnsToFields[name])
-        )
-    );
+    const requestedColumns = request.selections.map(selection => selection.field.columnName + " as " + selection.key);
+    return query.clone().select(requestedColumns);
 }
 
 const Author = new JoinType({
     name: "Author",
 
     fields() {
+        const books = many({
+            target: Book,
+            select: (request, {query: authorQuery}) => ({
+                query: knex("book").join(
+                    authorQuery.clone().distinct("author.id").as("author"),
+                    "book.author_id",
+                    "author.id"
+                )
+            }),
+            join: {"id": "authorId"}
+        });
+        
         return {
             id: JoinType.field({columnName: "id", type: GraphQLInt}),
             name: JoinType.field({columnName: "name", type: GraphQLString}),
-            books: many({
-                target: Book,
-                select: (request, {query: authorQuery}) => ({
-                    query: knex("book").join(
-                        authorQuery.clone().distinct("author.id").as("author"),
-                        "book.author_id",
-                        "author.id"
-                    )
-                }),
-                join: {"id": "authorId"}
-            })
+            books: books,
+            bookTitles: extract(books, "title")
         };
     },
 
@@ -76,21 +74,24 @@ const Book = new JoinType({
     name: "Book",
 
     fields() {
+        const author = single({
+            target: Author,
+            select: (request, {query: bookQuery}) => ({
+                query: knex("author").join(
+                    bookQuery.clone().select("book.author_id").distinct().as("book"),
+                    "author.id",
+                    "book.author_id"
+                )
+            }),
+            join: {"authorId": "id"}
+        });
+        
         return {
             id: JoinType.field({columnName: "id", type: GraphQLInt}),
             title: JoinType.field({columnName: "title", type: GraphQLString}),
             authorId: JoinType.field({columnName: "author_id", type: GraphQLInt}),
-            author: single({
-                target: Author,
-                select: (request, {query: bookQuery}) => ({
-                    query: knex("author").join(
-                        bookQuery.clone().select("book.author_id").distinct().as("book"),
-                        "author.id",
-                        "book.author_id"
-                    )
-                }),
-                join: {"authorId": "id"}
-            })
+            author: author,
+            booksBySameAuthor: extract(author, "books")
         };
     },
 
@@ -104,6 +105,20 @@ const Root = new RootJoinType({
     fields() {
         return {
             "books": many({target: Book, select: () => ({query: knex("book")})}),
+            "book": single({
+                target: Book,
+                select: request => {
+                    let books = knex("book");
+
+                    const bookId = request.args["id"];
+                    if (bookId != null) {
+                        books = books.where("id", "=", bookId);
+                    }
+
+                    return {query: books};
+                },
+                args: {"id": {type: GraphQLInt}}
+            }),
             "author": single({
                 target: Author,
                 select: request => {

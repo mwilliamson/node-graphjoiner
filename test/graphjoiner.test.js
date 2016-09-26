@@ -1,7 +1,7 @@
 import { fromPairs } from "lodash";
 import { graphql, GraphQLSchema, GraphQLInt, GraphQLString } from "graphql";
 
-import { JoinType, RootJoinType, single, many, execute } from "../lib";
+import { JoinType, RootJoinType, single, many, extract, execute } from "../lib";
 import { testCases } from "./executionTestCases";
 
 const allAuthors = [
@@ -29,14 +29,16 @@ const Author = new JoinType({
     name: "Author",
 
     fields() {
+        const books = many({
+            target: Book,
+            select: () => allBooks,
+            join: {"id": "authorId"}
+        });
         return {
             id: JoinType.field({name: "id", type: GraphQLInt}),
             name: JoinType.field({name: "name", type: GraphQLString}),
-            books: many({
-                target: Book,
-                select: () => allBooks,
-                join: {"id": "authorId"}
-            })
+            books: books,
+            bookTitles: extract(books, "title")
         };
     },
 
@@ -47,15 +49,18 @@ const Book = new JoinType({
     name: "Book",
 
     fields() {
+        const author = single({
+            target: Author,
+            select: () => allAuthors,
+            join: {"authorId": "id"}
+        });
+        
         return {
             id: JoinType.field({name: "id", type: GraphQLInt}),
             title: JoinType.field({name: "title", type: GraphQLString}),
             authorId: JoinType.field({name: "authorId", type: GraphQLInt}),
-            author: single({
-                target: Author,
-                select: () => allAuthors,
-                join: {"authorId": "id"}
-            })
+            author: author,
+            booksBySameAuthor: extract(author, "books")
         };
     },
 
@@ -69,6 +74,20 @@ const Root = new RootJoinType({
     fields() {
         return {
             "books": many({target: Book, select: () => allBooks}),
+            "book": single({
+                target: Book,
+                select: request => {
+                    let books = allBooks;
+
+                    const bookId = request.args["id"];
+                    if (bookId != null) {
+                        books = books.filter(book => book.id === bookId);
+                    }
+
+                    return books;
+                },
+                args: {"id": {type: GraphQLInt}}
+            }),
             "author": single({
                 target: Author,
                 select: request => {
