@@ -6,7 +6,7 @@ import { GraphQLObjectType, GraphQLList } from "graphql";
 import JoinMap from "./JoinMap";
 
 export function execute(root, query, options={}) {
-    const request = requestFromGraphqlAst(parse(query).definitions[0], root, null, options.variables);
+    const request = requestFromGraphqlDocument(parse(query), root, null, options.variables);
     return executeRequest(root, request);
 }
 
@@ -253,6 +253,10 @@ export class RootJoinType extends JoinType {
             fetchImmediates: () => [{}]
         });
     }
+}
+
+function requestFromGraphqlDocument(document, root, field, variables) {
+    return requestFromGraphqlAst(document.definitions[0], root, field, variables);
 }
 
 function requestFromGraphqlAst(ast, root, field, variables) {
