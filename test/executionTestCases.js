@@ -324,5 +324,57 @@ export const testCases = (execute) => ({
                 }
             })
         );
+    },
+    
+    "querying list of entities with fragment spread": () => {
+        const query = `
+            {
+                book(id: 1) {
+                    ...BookIdentifiers
+                }
+            }
+
+            fragment BookIdentifiers on Book {
+                id
+                title
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "book": {
+                    "id": 1,
+                    "title": "Leave It to Psmith",
+                }
+            })
+        );
+    },
+    
+    "querying list of entities with nested fragment spread": () => {
+        const query = `
+            {
+                book(id: 1) {
+                    ...BookGubbins
+                }
+            }
+
+            fragment BookGubbins on Book {
+                ...BookIdentifiers
+            }
+
+            fragment BookIdentifiers on Book {
+                id
+                title
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "book": {
+                    "id": 1,
+                    "title": "Leave It to Psmith",
+                }
+            })
+        );
     }
 });

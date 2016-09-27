@@ -1,15 +1,26 @@
-import { map } from "lodash";
+import { keyBy, map } from "lodash";
 import { getArgumentValues } from "graphql/execution/values";
 
 export function requestFromGraphqlDocument(document, root, variables) {
-    return requestFromGraphqlAst(document.definitions[0], root, null, variables);
+    function definitionsOfKind(kind) {
+        return document.definitions.filter(definition => definition.kind === kind);
+    }
+    
+    const fragments = keyBy(
+        definitionsOfKind("FragmentDefinition"),
+        definition => definition.name.value
+    );
+    
+    const query = single(definitionsOfKind("OperationDefinition"));
+    
+    return requestFromGraphqlAst(query, root, null, variables, fragments);
 }
 
-export function requestFromGraphqlAst(ast, root, field, variables) {
-    return reader(variables)(ast, root, field);
+export function requestFromGraphqlAst(ast, root, field, variables, fragments) {
+    return reader(variables, fragments)(ast, root, field);
 }
 
-function reader(variables) {
+function reader(variables, fragments) {
     function readAst(ast, root, field) {
         const isField = ast.kind === "Field";
         return createRequest({
@@ -37,13 +48,34 @@ function reader(variables) {
     function graphqlSelections(ast, root) {
         if (ast.selectionSet) {
             const fields = root.fields();
-            return ast.selectionSet.selections.map(selection => {
+            const fieldSelections = collectFields(ast);
+            
+            return fieldSelections.map(selection => {
                 const field = fields[requestedFieldName(selection)];
                 return readAst(selection, field._target, field);
             });
         } else {
             return [];
         }
+    }
+    
+    function collectFields(ast) {
+        const fieldSelections = [];
+        addFields(ast, fieldSelections);
+        return fieldSelections;
+    }
+    
+    function addFields(ast, fieldSelections) {
+        ast.selectionSet.selections.forEach(selection => {
+            if (selection.kind === "Field") {
+                fieldSelections.push(selection);
+            } else if (selection.kind === "FragmentSpread") {
+                // TODO: handle type conditions
+                addFields(fragments[selection.name.value], fieldSelections);
+            } else {
+                throw new Error("Unknown selection: " + selection.kind);
+            }
+        });
     }
     
     return readAst;
@@ -65,4 +97,12 @@ function requestedFieldName(ast) {
 
 export function requestedFieldKey(ast) {
     return ast.alias ? ast.alias.value : requestedFieldName(ast);
+}
+
+function single(values) {
+    if (values.length === 1) {
+        return values[0];
+    } else {
+        throw new Error("Expected 1 but got " + values.length);
+    }
 }
