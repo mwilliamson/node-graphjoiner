@@ -1,8 +1,8 @@
 import { map } from "lodash";
 import { getArgumentValues } from "graphql/execution/values";
 
-export function requestFromGraphqlDocument(document, root, field, variables) {
-    return requestFromGraphqlAst(document.definitions[0], root, field, variables);
+export function requestFromGraphqlDocument(document, root, variables) {
+    return requestFromGraphqlAst(document.definitions[0], root, null, variables);
 }
 
 export function requestFromGraphqlAst(ast, root, field, variables) {

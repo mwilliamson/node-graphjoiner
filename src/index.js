@@ -7,7 +7,7 @@ import { createRequest, requestFromGraphqlDocument, requestFromGraphqlAst, reque
 import JoinMap from "./JoinMap";
 
 export function execute(root, query, options={}) {
-    const request = requestFromGraphqlDocument(parse(query), root, null, options.variables);
+    const request = requestFromGraphqlDocument(parse(query), root, options.variables);
     return executeRequest(root, request);
 }
 
