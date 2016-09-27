@@ -6,39 +6,47 @@ export function requestFromGraphqlDocument(document, root, field, variables) {
 }
 
 export function requestFromGraphqlAst(ast, root, field, variables) {
-    const isField = ast.kind === "Field";
-    return createRequest({
-        field: field,
-        key: isField ? requestedFieldKey(ast) : null,
-        args: graphqlArgs(ast, field, variables),
-        selections: graphqlSelections(ast, root, variables)
-    });
+    return reader(variables)(ast, root, field);
 }
 
-function graphqlArgs(ast, field, variables) {
-    if (field) {
-        const argumentDefinitions = map(field.args, (arg, argName) => ({
-            name: argName,
-            description: arg.description === undefined ? null : arg.description,
-            type: arg.type,
-            defaultValue: arg.defaultValue === undefined ? null : arg.defaultValue
-        }));
-        return getArgumentValues(argumentDefinitions, ast.arguments, variables);
-    } else {
-        return {};
-    }
-}
-
-function graphqlSelections(ast, root, variables) {
-    if (ast.selectionSet) {
-        const fields = root.fields();
-        return ast.selectionSet.selections.map(selection => {
-            const field = fields[requestedFieldName(selection)];
-            return requestFromGraphqlAst(selection, field._target, field, variables);
+function reader(variables) {
+    function readAst(ast, root, field) {
+        const isField = ast.kind === "Field";
+        return createRequest({
+            field: field,
+            key: isField ? requestedFieldKey(ast) : null,
+            args: graphqlArgs(ast, field),
+            selections: graphqlSelections(ast, root)
         });
-    } else {
-        return [];
     }
+    
+    function graphqlArgs(ast, field) {
+        if (field) {
+            const argumentDefinitions = map(field.args, (arg, argName) => ({
+                name: argName,
+                description: arg.description === undefined ? null : arg.description,
+                type: arg.type,
+                defaultValue: arg.defaultValue === undefined ? null : arg.defaultValue
+            }));
+            return getArgumentValues(argumentDefinitions, ast.arguments, variables);
+        } else {
+            return {};
+        }
+    }
+
+    function graphqlSelections(ast, root) {
+        if (ast.selectionSet) {
+            const fields = root.fields();
+            return ast.selectionSet.selections.map(selection => {
+                const field = fields[requestedFieldName(selection)];
+                return readAst(selection, field._target, field);
+            });
+        } else {
+            return [];
+        }
+    }
+    
+    return readAst;
 }
 
 export function createRequest(request) {
