@@ -376,5 +376,27 @@ export const testCases = (execute) => ({
                 }
             })
         );
+    },
+    
+    "querying list of entities with inline fragment": () => {
+        const query = `
+            {
+                book(id: 1) {
+                    ... on Book {
+                        id
+                        title
+                    }
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "book": {
+                    "id": 1,
+                    "title": "Leave It to Psmith",
+                }
+            })
+        );
     }
 });

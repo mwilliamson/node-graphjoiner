@@ -72,6 +72,8 @@ function reader(variables, fragments) {
             } else if (selection.kind === "FragmentSpread") {
                 // TODO: handle type conditions
                 addFields(fragments[selection.name.value], fieldSelections);
+            } else if (selection.kind === "InlineFragment") {
+                addFields(selection, fieldSelections);
             } else {
                 throw new Error("Unknown selection: " + selection.kind);
             }
