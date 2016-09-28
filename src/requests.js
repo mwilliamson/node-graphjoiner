@@ -1,4 +1,4 @@
-import { keyBy, map } from "lodash";
+import { cloneDeep, keyBy, map } from "lodash";
 import { getArgumentValues } from "graphql/execution/values";
 
 export function requestFromGraphqlDocument(document, root, variables) {
@@ -48,7 +48,7 @@ function reader(variables, fragments) {
     function graphqlSelections(ast, root) {
         if (ast.selectionSet) {
             const fields = root.fields();
-            const fieldSelections = collectFields(ast);
+            const fieldSelections = mergeFields(collectFields(ast));
             
             return fieldSelections.map(selection => {
                 const field = fields[requestedFieldName(selection)];
@@ -78,6 +78,25 @@ function reader(variables, fragments) {
                 throw new Error("Unknown selection: " + selection.kind);
             }
         });
+    }
+    
+    function mergeFields(selections) {
+        const merged = [];
+        const byKey = {};
+        
+        selections.forEach(selection => {
+            const key = requestedFieldKey(selection);
+            if (byKey[key]) {
+                if (selection.selectionSet) {
+                    byKey[key].selectionSet.selections.push(...selection.selectionSet.selections);
+                }
+            } else {
+                byKey[key] = cloneDeep(selection);
+                merged.push(byKey[key]);
+            }
+        });
+        
+        return merged;
     }
     
     return readAst;

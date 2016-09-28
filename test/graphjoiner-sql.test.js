@@ -38,10 +38,10 @@ exports.beforeEach = () => {
         ]).into("book"));
 };
 
-function fetchImmediatesFromQuery(request, {query}) {
-    const requestedColumns = request.selections.map(selection => selection.field.columnName + " as " + selection.key);
+const fetchImmediatesFromQuery = tableName => (request, {query}) => {
+    const requestedColumns = request.selections.map(selection => tableName + "." + selection.field.columnName + " as " + selection.key);
     return query.clone().select(requestedColumns);
-}
+};
 
 const Author = new JoinType({
     name: "Author",
@@ -67,7 +67,7 @@ const Author = new JoinType({
         };
     },
 
-    fetchImmediates: fetchImmediatesFromQuery
+    fetchImmediates: fetchImmediatesFromQuery("author")
 });
 
 const Book = new JoinType({
@@ -95,7 +95,7 @@ const Book = new JoinType({
         };
     },
 
-    fetchImmediates: fetchImmediatesFromQuery
+    fetchImmediates: fetchImmediatesFromQuery("book")
 });
 
 

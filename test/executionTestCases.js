@@ -398,5 +398,91 @@ export const testCases = (execute) => ({
                 }
             })
         );
+    },
+    
+    "scalar fields are merged": () => {
+        const query = `
+            {
+                book(id: 1) {
+                    author {
+                        name
+                    }
+                    
+                    author {
+                        name
+                    }
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "book": {
+                    "author": {
+                        "name": "PG Wodehouse"
+                    }
+                }
+            })
+        );
+    },
+    
+    "object fields are merged": () => {
+        const query = `
+            {
+                book(id: 1) {
+                    author {
+                        id
+                    }
+                    
+                    author {
+                        name
+                    }
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "book": {
+                    "author": {
+                        "id": 1,
+                        "name": "PG Wodehouse"
+                    }
+                }
+            })
+        );
+    },
+    
+    "nested object fields are merged": () => {
+        const query = `
+            {
+                book(id: 1) {
+                    author {
+                        books {
+                            id
+                        }
+                    }
+                    
+                    author {
+                        books {
+                            title
+                        }
+                    }
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "book": {
+                    "author": {
+                        "books": [
+                            {"id": 1, "title": "Leave It to Psmith"},
+                            {"id": 2, "title": "Right Ho, Jeeves"}
+                        ]
+                    }
+                }
+            })
+        );
     }
 });
