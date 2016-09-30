@@ -1,9 +1,5 @@
 # GraphJoiner: Implementing GraphQL with joins
 
-In some use cases, I've found it more natural to generate the requested GraphQL
-data using SQL joins rather than resolving values individually. This is a proof
-of concept that provides an alternative way of responding to GraphQL queries.
-
 In the reference GraphQL implementation, resolve functions describe how to
 fulfil some part of the requested data for each instance of an object.
 If implemented naively with a SQL backend, this results in the N+1 problem.
