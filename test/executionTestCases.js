@@ -522,5 +522,26 @@ export const testCases = (execute) => ({
                 }
             })
         );
+    },
+
+    "both include and skip directives must be satisified": () => {
+        const query = `
+            {
+                book(id: 1) {
+                    includeFalse_skipFalse: title @include(if: false) @skip(if: false)
+                    includeFalse_skipTrue: title @include(if: false) @skip(if: true)
+                    includeTrue_skipFalse: title @include(if: true) @skip(if: false)
+                    includeTrue_skipTrue: title @include(if: true) @skip(if: true)
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "book": {
+                    "includeTrue_skipFalse": "Leave It to Psmith"
+                }
+            })
+        );
     }
 });
