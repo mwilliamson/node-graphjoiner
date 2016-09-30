@@ -484,5 +484,24 @@ export const testCases = (execute) => ({
                 }
             })
         );
+    },
+    
+    "include directive on field conditionally includes field": () => {
+        const query = `
+            {
+                book(id: 1) {
+                    id @include(if: false)
+                    title @include(if: true)
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "book": {
+                    "title": "Leave It to Psmith"
+                }
+            })
+        );
     }
 });

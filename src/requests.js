@@ -1,5 +1,6 @@
 import { cloneDeep, keyBy, map } from "lodash";
 import { getArgumentValues } from "graphql/execution/values";
+import { GraphQLIncludeDirective } from "graphql/type/directives";
 
 export function requestFromGraphqlDocument(document, root, variables) {
     function definitionsOfKind(kind) {
@@ -66,7 +67,7 @@ function reader(variables, fragments) {
     }
     
     function addFields(ast, fieldSelections) {
-        ast.selectionSet.selections.forEach(selection => {
+        ast.selectionSet.selections.filter(shouldIncludeNode).forEach(selection => {
             if (selection.kind === "Field") {
                 fieldSelections.push(selection);
             } else if (selection.kind === "FragmentSpread") {
@@ -78,6 +79,25 @@ function reader(variables, fragments) {
                 throw new Error("Unknown selection: " + selection.kind);
             }
         });
+    }
+    
+    function shouldIncludeNode(node) {
+        for (let directiveIndex = 0; directiveIndex < node.directives.length; directiveIndex++) {
+            const directive = node.directives[directiveIndex];
+            if (directive.name.value === "include") {
+                const args = getArgumentValues(
+                    GraphQLIncludeDirective.args,
+                    directive.arguments,
+                    variables
+                );
+                if (args.if === false) {
+                    return false;
+                }
+            } else {
+                throw new Error("Unknown directive: " + directive.name.value);
+            }
+        }
+        return true;
     }
     
     function mergeFields(selections) {
