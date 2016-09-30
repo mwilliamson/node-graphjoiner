@@ -1,6 +1,6 @@
 import { cloneDeep, keyBy, map } from "lodash";
 import { getArgumentValues } from "graphql/execution/values";
-import { GraphQLIncludeDirective } from "graphql/type/directives";
+import { GraphQLIncludeDirective, GraphQLSkipDirective } from "graphql/type/directives";
 
 export function requestFromGraphqlDocument(document, root, variables) {
     function definitionsOfKind(kind) {
@@ -91,6 +91,15 @@ function reader(variables, fragments) {
                     variables
                 );
                 if (args.if === false) {
+                    return false;
+                }
+            } else if (directive.name.value === "skip") {
+                const args = getArgumentValues(
+                    GraphQLSkipDirective.args,
+                    directive.arguments,
+                    variables
+                );
+                if (args.if === true) {
                     return false;
                 }
             } else {

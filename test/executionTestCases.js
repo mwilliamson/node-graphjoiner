@@ -503,5 +503,24 @@ export const testCases = (execute) => ({
                 }
             })
         );
+    },
+
+    "skip directive on field conditionally skips field": () => {
+        const query = `
+            {
+                book(id: 1) {
+                    id @skip(if: true)
+                    title @skip(if: false)
+                }
+            }
+        `;
+
+        return execute(query).then(result =>
+            assert.deepEqual(result, {
+                "book": {
+                    "title": "Leave It to Psmith"
+                }
+            })
+        );
     }
 });
