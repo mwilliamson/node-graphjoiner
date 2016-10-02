@@ -79,10 +79,10 @@ const Root = new RootJoinType({
             "books": many({target: Book, select: () => allBooks}),
             "book": single({
                 target: Book,
-                select: request => {
+                select: args => {
                     let books = allBooks;
 
-                    const bookId = request.args["id"];
+                    const bookId = args["id"];
                     if (bookId != null) {
                         books = books.filter(book => book.id === bookId);
                     }
@@ -93,10 +93,10 @@ const Root = new RootJoinType({
             }),
             "author": single({
                 target: Author,
-                select: request => {
+                select: args => {
                     let authors = allAuthors;
 
-                    const authorId = request.args["id"];
+                    const authorId = args["id"];
                     if (authorId != null) {
                         authors = authors.filter(author => author.id === authorId);
                     }

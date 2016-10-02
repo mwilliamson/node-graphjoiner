@@ -93,7 +93,7 @@ class Relationship {
                 key: "_graphjoiner_joinToParentKey_" + childKey
             }))
         };
-        return Promise.resolve(this._select(request, selectParent)).then(select =>
+        return Promise.resolve(this._select(request.args, selectParent)).then(select =>
             this._target.fetch(childRequest, select)
         )
         .then(results =>

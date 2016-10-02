@@ -49,7 +49,7 @@ const Author = new JoinType({
     fields() {
         const books = many({
             target: Book,
-            select: (request, {query: authorQuery}) => ({
+            select: (args, {query: authorQuery}) => ({
                 query: knex("book").join(
                     authorQuery.clone().distinct("author.id").as("author"),
                     "book.author_id",
@@ -76,7 +76,7 @@ const Book = new JoinType({
     fields() {
         const author = single({
             target: Author,
-            select: (request, {query: bookQuery}) => ({
+            select: (args, {query: bookQuery}) => ({
                 query: knex("author").join(
                     bookQuery.clone().select("book.author_id").distinct().as("book"),
                     "author.id",
@@ -107,10 +107,10 @@ const Root = new RootJoinType({
             "books": many({target: Book, select: () => ({query: knex("book")})}),
             "book": single({
                 target: Book,
-                select: request => {
+                select: args => {
                     let books = knex("book");
 
-                    const bookId = request.args["id"];
+                    const bookId = args["id"];
                     if (bookId != null) {
                         books = books.where("id", "=", bookId);
                     }
@@ -121,10 +121,10 @@ const Root = new RootJoinType({
             }),
             "author": single({
                 target: Author,
-                select: request => {
+                select: args => {
                     let authors = knex("author");
 
-                    const authorId = request.args["id"];
+                    const authorId = args["id"];
                     if (authorId != null) {
                         authors = authors.where("id", "=", authorId);
                     }
