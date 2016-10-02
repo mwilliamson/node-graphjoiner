@@ -1,4 +1,4 @@
-import { flatMap, forEach, fromPairs, map, mapValues, partition, toPairs, zip } from "lodash";
+import { flatMap, forEach, fromPairs, map, mapValues, partition, toPairs, uniqBy, zip } from "lodash";
 import { parse } from "graphql/language";
 import { GraphQLObjectType, GraphQLList } from "graphql";
 
@@ -204,7 +204,10 @@ export class JoinType {
             relationshipSelections,
             selection => selection.field.parentJoinSelections(this)
         );
-        const immediateSelections = requestedImmediateSelections.concat(request.joinSelections).concat(joinToChildrenSelections);
+        const immediateSelections = uniqBy(
+            requestedImmediateSelections.concat(request.joinSelections).concat(joinToChildrenSelections),
+            "key"
+        );
         const immediatesRequest = {...request, selections: immediateSelections};
         return Promise.resolve(this.fetchImmediates(immediatesRequest, select)).then(results => {
             return Promise.all(map(relationshipSelections, fieldRequest => {
