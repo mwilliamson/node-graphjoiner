@@ -402,7 +402,7 @@ create a new relationship that extracts a given field.
 
 For instance, suppose an author type has a field `books` that describes all books by that author.
 We can define a field `bookTitles` that describes the title of all books by that author
-by calling `extract(books, "title"):
+by calling `extract(books, "title")`:
 
 ```javascript
 new JoinType({
