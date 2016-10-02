@@ -227,7 +227,7 @@ The root has only one field, `books`, a one-to-many relationship,
 which we define using `many()`.
 The first argument, `Book`,
 is the object type we're defining a relationship to.
-The second argument to describes how to create a query representing all of those
+The second argument describes how to create a query representing all of those
 related books: in this case all books, potentially filtered by a genre argument.
 
 This means we need to define `Book`:
