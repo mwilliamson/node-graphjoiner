@@ -75,11 +75,11 @@ const Root = new RootJoinType({
         return {
             "books": many({
                 target: Book,
-                select: request => {
+                select: args => {
                     let books = knex("book");
 
-                    if ("genre" in request.args) {
-                        books = books.where("genre", "=", request.args["genre"]);
+                    if ("genre" in args) {
+                        books = books.where("genre", "=", args["genre"]);
                     }
 
                     return {query: books};
@@ -111,7 +111,7 @@ const Book = new JoinType({
             authorId: field({columnName: "author_id", type: GraphQLInt}),
             author: single({
                 target: Author,
-                select: (request, {query: bookQuery}) => ({
+                select: (args, {query: bookQuery}) => ({
                     query: knex("author").join(
                         bookQuery.clone().distinct("book.author_id").as("book"),
                         "author.id",
@@ -206,11 +206,11 @@ const Root = new RootJoinType({
         return {
             "books": many({
                 target: Book,
-                select: request => {
+                select: args => {
                     let books = knex("book");
 
-                    if ("genre" in request.args) {
-                        books = books.where("genre", "=", request.args["genre"]);
+                    if ("genre" in args) {
+                        books = books.where("genre", "=", args["genre"]);
                     }
 
                     return {query: books};
@@ -244,7 +244,7 @@ const Book = new JoinType({
             authorId: field({columnName: "author_id", type: GraphQLInt}),
             author: single({
                 target: Author,
-                select: (request, {query: bookQuery}) => ({
+                select: (args, {query: bookQuery}) => ({
                     query: knex("author").join(
                         bookQuery.clone().distinct("book.author_id").as("book"),
                         "author.id",
@@ -302,7 +302,7 @@ const Author = new JoinType({
             name: field({columnName: "name", type: GraphQLString}),
             books: many({
                 target: Book,
-                select: (request, {query: authorQuery}) => ({
+                select: (args, {query: authorQuery}) => ({
                     query: knex("book").join(
                         authorQuery.clone().distinct("author.id").as("author"),
                         "book.author_id",
