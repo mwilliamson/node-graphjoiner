@@ -378,6 +378,7 @@ This takes a single object argument with the properties:
   how to join together instances of the parent type and the target type.
   The keys should correspond to field names on the parent type,
   while the values should correspond to field names on the target type.
+
   For instance, suppose we're defining a `books` field on an `Author` type.
   If each book has an `authorId` field, and each author has an `id` field,
   then `join` should be `{"id": "authorId"}`.
