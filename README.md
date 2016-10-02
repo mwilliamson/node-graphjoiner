@@ -65,7 +65,7 @@ knex.schema
 We then define types for the root, books and authors:
 
 ```javascript
-import { JoinType, RootJoinType, single, many } from "graphjoiner";
+import { JoinType, RootJoinType, field, single, many } from "graphjoiner";
 import { fromPairs, mapKeys, zip } from "lodash";
 
 const Root = new RootJoinType({
@@ -105,10 +105,10 @@ const Book = new JoinType({
 
     fields() {
         return {
-            id: JoinType.field({columnName: "id", type: GraphQLInt}),
-            title: JoinType.field({columnName: "title", type: GraphQLString}),
-            genre: JoinType.field({columnName: "genre", type: GraphQLString}),
-            authorId: JoinType.field({columnName: "author_id", type: GraphQLInt}),
+            id: field({columnName: "id", type: GraphQLInt}),
+            title: field({columnName: "title", type: GraphQLString}),
+            genre: field({columnName: "genre", type: GraphQLString}),
+            authorId: field({columnName: "author_id", type: GraphQLInt}),
             author: single({
                 target: Author,
                 select: (request, {query: bookQuery}) => ({
@@ -131,8 +131,8 @@ const Author = new JoinType({
 
     fields() {
         return {
-            id: JoinType.field({columnName: "id", type: GraphQLInt}),
-            name: JoinType.field({columnName: "name", type: GraphQLString})
+            id: field({columnName: "id", type: GraphQLInt}),
+            name: field({columnName: "name", type: GraphQLString})
         };
     },
 
@@ -238,10 +238,10 @@ const Book = new JoinType({
 
     fields() {
         return {
-            id: JoinType.field({columnName: "id", type: GraphQLInt}),
-            title: JoinType.field({columnName: "title", type: GraphQLString}),
-            genre: JoinType.field({columnName: "genre", type: GraphQLString}),
-            authorId: JoinType.field({columnName: "author_id", type: GraphQLInt}),
+            id: field({columnName: "id", type: GraphQLInt}),
+            title: field({columnName: "title", type: GraphQLString}),
+            genre: field({columnName: "genre", type: GraphQLString}),
+            authorId: field({columnName: "author_id", type: GraphQLInt}),
             author: single({
                 target: Author,
                 select: (request, {query: bookQuery}) => ({
@@ -298,8 +298,8 @@ const Author = new JoinType({
 
     fields() {
         return {
-            id: JoinType.field({columnName: "id", type: GraphQLInt}),
-            name: JoinType.field({columnName: "name", type: GraphQLString}),
+            id: field({columnName: "id", type: GraphQLInt}),
+            name: field({columnName: "name", type: GraphQLString}),
             books: many({
                 target: Book,
                 select: (request, {query: authorQuery}) => ({

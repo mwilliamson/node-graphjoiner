@@ -1,7 +1,7 @@
 import { fromPairs, mapKeys, zip } from "lodash";
 import { graphql, GraphQLSchema, GraphQLInt, GraphQLString } from "graphql";
 
-import { JoinType, RootJoinType, single, many, extract, execute } from "../lib";
+import { JoinType, RootJoinType, field, single, many, extract, execute } from "../lib";
 import { testCases } from "./executionTestCases";
 
 import Knex from "knex";
@@ -60,8 +60,8 @@ const Author = new JoinType({
         });
         
         return {
-            id: JoinType.field({columnName: "id", type: GraphQLInt}),
-            name: JoinType.field({columnName: "name", type: GraphQLString}),
+            id: field({columnName: "id", type: GraphQLInt}),
+            name: field({columnName: "name", type: GraphQLString}),
             books: books,
             bookTitles: extract(books, "title")
         };
@@ -87,9 +87,9 @@ const Book = new JoinType({
         });
         
         return {
-            id: JoinType.field({columnName: "id", type: GraphQLInt}),
-            title: JoinType.field({columnName: "title", type: GraphQLString}),
-            authorId: JoinType.field({columnName: "author_id", type: GraphQLInt}),
+            id: field({columnName: "id", type: GraphQLInt}),
+            title: field({columnName: "title", type: GraphQLString}),
+            authorId: field({columnName: "author_id", type: GraphQLInt}),
             author: author,
             booksBySameAuthor: extract(author, "books")
         };

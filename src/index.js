@@ -234,7 +234,7 @@ export class JoinType {
     }
 }
 
-JoinType.field = function field(options) {
+export function field(options) {
     return {
         ...options,
         toGraphQLField() {

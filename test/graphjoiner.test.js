@@ -1,7 +1,7 @@
 import { fromPairs } from "lodash";
 import { graphql, GraphQLSchema, GraphQLInt, GraphQLString } from "graphql";
 
-import { JoinType, RootJoinType, single, many, extract, execute } from "../lib";
+import { JoinType, RootJoinType, field, single, many, extract, execute } from "../lib";
 import { testCases } from "./executionTestCases";
 
 const allAuthors = [
@@ -35,8 +35,8 @@ const Author = new JoinType({
             join: {"id": "authorId"}
         });
         return {
-            id: JoinType.field({name: "id", type: GraphQLInt}),
-            name: JoinType.field({name: "name", type: GraphQLString}),
+            id: field({name: "id", type: GraphQLInt}),
+            name: field({name: "name", type: GraphQLString}),
             books: books,
             bookTitles: extract(books, "title")
         };
@@ -56,9 +56,9 @@ const Book = new JoinType({
         });
         
         return {
-            id: JoinType.field({name: "id", type: GraphQLInt}),
-            title: JoinType.field({name: "title", type: GraphQLString}),
-            authorId: JoinType.field({name: "authorId", type: GraphQLInt}),
+            id: field({name: "id", type: GraphQLInt}),
+            title: field({name: "title", type: GraphQLString}),
+            authorId: field({name: "authorId", type: GraphQLInt}),
             author: author,
             booksBySameAuthor: extract(author, "books")
         };
