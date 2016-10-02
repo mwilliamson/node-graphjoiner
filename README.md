@@ -324,8 +324,95 @@ Knex queries also behave as promises (where `.then()` begins execution of the
 query), and GraphJoiner allows promises to be returned from the various
 methods where we might want to return a Knex query.)
 
-Installation
-------------
+## Installation
 
     npm install graphjoiner
+
+## API
+
+### `JoinType`
+
+#### `new JoinType({name, fields, fetchImmediates})`
+
+Create a new `JoinType`.
+
+* `name`: the name of the type.
+
+* `fields`: an object mapping names to each field.
+  Each field should either be an immediate field created by `field()`,
+  or a relationship to another type.
+
+* `fetchImmediates(request, select)`
+
+### Fields
+
+#### `field({type, ...props})`
+
+Defines an immediate field.
+At least `type` must be provided, which should be a GraphQL type such as `GraphQLString`.
+All properties are available by the same name on the returned field.
+
+#### `single({targetType, select, join, args})`
+
+Create a one-to-one relationship.
+The GraphQL type of the field will be the GraphQL type of `targetType`.
+
+This takes a single object argument with the properties:
+
+* `targetType` (required). The join type that this relationship joins to.
+
+* `select(args, select)` (required).
+  A function that generates the selector to be used when fetching instances of the target type for this field.
+
+* `join` (optional): an object describing
+  how to join together instances of the parent type and the target type.
+  The keys should correspond to field names on the parent type,
+  while the values should correspond to field names on the target type.
+  For instance, suppose we're defining a `books` field on an `Author` type.
+  If each book has an `authorId` field, and each author has an `id` field,
+  then `join` should be `{"id": "authorId"}`.
+  If not specified, GraphJoiner performs a cross join.
+
+* `args` (optional): the arguments that may be passed to this field.
+  This should be defined in the same way as arguments on an ordinary
+  GraphQL field, such as `{genre: {type: GraphQLString}}`.
+
+#### `many({targetType, select, join, args})`
+
+Create a one-to-many relationship.
+The GraphQL type of the field will be a list of the GraphQL type of `targetType`.
+The arguments to `many()` are the same as those for `single()`.
+
+#### `extract(relationship, fieldName)`
+
+Given a relationship,
+such as those returned by `single()` and `many()`,
+create a new relationship that extracts a given field.
+
+For instance, suppose an author type has a field `books` that describes all books by that author.
+We can define a field `bookTitles` that describes the title of all books by that author
+by calling `extract(books, "title"):
+
+```javascript
+new JoinType({
+    "Author",
+    fields: {
+        books: books,
+        bookTitles: extract(books, "title")
+    },
+    fetchImmediates: ...
+})
+```
+
+### `RootJoinType`
+
+A `RootJoinType` behaves similarly to `JoinType`,
+except that:
+
+* there is always exactly one instance
+
+* there are no immediate fields
+
+As a result, there is no need to pass `fetchImmediates` when constructing
+a `RootJoinType`.
 
