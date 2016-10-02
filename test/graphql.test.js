@@ -17,9 +17,9 @@ const allBooks = [
     {id: 3, title: "Catch-22", authorId: 2}
 ];
 
-function fetchImmediatesFromObj(request, objs) {
+function fetchImmediatesFromObj(selections, objs) {
     function readObj(obj) {
-        return fromPairs(request.selections.map(selection => [
+        return fromPairs(selections.map(selection => [
             selection.key,
             obj[selection.field.name]
         ]));

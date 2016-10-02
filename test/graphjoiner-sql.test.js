@@ -38,8 +38,8 @@ exports.beforeEach = () => {
         ]).into("book"));
 };
 
-const fetchImmediatesFromQuery = tableName => (request, {query}) => {
-    const requestedColumns = request.selections.map(selection => tableName + "." + selection.field.columnName + " as " + selection.key);
+const fetchImmediatesFromQuery = tableName => (selections, {query}) => {
+    const requestedColumns = selections.map(selection => tableName + "." + selection.field.columnName + " as " + selection.key);
     return query.clone().select(requestedColumns);
 };
 

@@ -208,8 +208,7 @@ export class JoinType {
             requestedImmediateSelections.concat(request.joinSelections).concat(joinToChildrenSelections),
             "key"
         );
-        const immediatesRequest = {...request, selections: immediateSelections};
-        return Promise.resolve(this.fetchImmediates(immediatesRequest, select)).then(results => {
+        return Promise.resolve(this.fetchImmediates(immediateSelections, select)).then(results => {
             return Promise.all(map(relationshipSelections, fieldRequest => {
                 return fieldRequest.field.fetch(fieldRequest, select).then(children => {
                     results.forEach(result => {

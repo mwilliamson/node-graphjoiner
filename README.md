@@ -90,9 +90,9 @@ const Root = new RootJoinType({
     }
 });
 
-function fetchImmediatesFromQuery(request, {query}) {
-    const requestedColumns = request.selections.map(selection => selection.field.columnName);
-    const columnsToFields = fromPairs(zip(requestedColumns, request.selections.map(selection => selection.key)));
+function fetchImmediatesFromQuery(selections, {query}) {
+    const requestedColumns = selections.map(selection => selection.field.columnName);
+    const columnsToFields = fromPairs(zip(requestedColumns, selections.map(selection => selection.key)));
     return query.clone().select(requestedColumns).then(records =>
         records.map(record =>
             mapKeys(record, (value, name) => columnsToFields[name])
@@ -272,15 +272,15 @@ this is fine for relationships defined on the root.)
 
 The remaining fields define a mapping from the GraphQL field to the database
 column. This mapping is handled by `fetchImmediatesFromQuery()`.
-The value of `request.requestedFields` in `fetchImmediates()`
-is the fields that aren't defined as relationships
+The value of `selections` in `fetchImmediates()`
+is the requested fields that aren't defined as relationships
 (using `single` or `many`) that were either explicitly requested in the
 original GraphQL query, or are required as part of the join.
 
 ```javascript
-function fetchImmediatesFromQuery(request, {query}) {
-    const requestedColumns = request.selections.map(selection => selection.field.columnName);
-    const columnsToFields = fromPairs(zip(requestedColumns, request.selections.map(selection => selection.key)));
+function fetchImmediatesFromQuery(selections, {query}) {
+    const requestedColumns = selections.map(selection => selection.field.columnName);
+    const columnsToFields = fromPairs(zip(requestedColumns, selections.map(selection => selection.key)));
     return query.clone().select(requestedColumns).then(records =>
         records.map(record =>
             mapKeys(record, (value, name) => columnsToFields[name])
@@ -342,7 +342,17 @@ Create a new `JoinType`.
   Each field should either be an immediate field created by `field()`,
   or a relationship to another type.
 
-* `fetchImmediates(request, select)`
+* `fetchImmediates(selections, select)`: a function to fetch the immediates for this type.
+  `selections` is a list of objects with the properties:
+    * `key`: the key of the selection.
+      This is the alias specified in the GraphQL request,
+      or the name of the field if no alias was specified.
+    * `field`: the field of the selection.
+      This will be one of the values passed in the `fields` property when
+      constructing the `JoinType`.
+
+  `fetchImmediates` should return a list of objects,
+  where each object has a property named after the key of each selection.
 
 ### Fields
 
