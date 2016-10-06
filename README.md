@@ -342,7 +342,8 @@ Create a new `JoinType`.
   Each field should either be an immediate field created by `field()`,
   or a relationship to another type.
 
-* `fetchImmediates(selections, select)`: a function to fetch the immediates for this type.
+* `fetchImmediates(selections, select)`:
+  a function to fetch the immediates for a node in the request.
   `selections` is a list of objects with the properties:
     * `key`: the key of the selection.
       This is the alias specified in the GraphQL request,
@@ -350,6 +351,7 @@ Create a new `JoinType`.
     * `field`: the field of the selection.
       This will be one of the values passed in the `fields` property when
       constructing the `JoinType`.
+  `select` is the selector for this node in the request.
 
   `fetchImmediates` should return a list of objects,
   where each object has a property named after the key of each selection.
