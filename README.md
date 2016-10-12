@@ -30,7 +30,7 @@ A book has an ID, a title and an author ID.
 An author has an ID and a name.
 
 ```javascript
-import Knex from "knex";
+import sql from "sql-gen";
 
 let knex = Knex({
     dialect: "sqlite3",
@@ -40,26 +40,18 @@ let knex = Knex({
     useNullAsDefault: true
 });
 
-knex.schema
-    .createTable("author", function(table) {
-        table.increments("id");
-        table.string("name");
-    })
-    .createTable("book", function(table) {
-        table.increments("id");
-        table.string("title");
-        table.string("genre");
-        table.integer("author_id").unsigned().references("author.id")
-    })
-    .then(() => knex.insert([
-        {id: 1, name: "PG Wodehouse"},
-        {id: 2, name: "Joseph Heller"}
-    ]).into("author"))
-    .then(() => knex.insert([
-        {id: 1, title: "Leave It to Psmith", genre: "comedy", author_id: 1},
-        {id: 2, title: "Right Ho, Jeeves", genre: "comedy", author_id: 1},
-        {id: 3, title: "Catch-22", genre: "comedy", author_id: 2}
-    ]).into("book"))
+const AuthorTable = sql.table("author", {
+    id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
+    name: sql.column({name: "name", type: sql.types.string})
+});
+const BookTable = sql.table("book", {
+    id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
+    title: sql.column({name: "title", type: sql.types.string}),
+    genre: sql.column({name: "genre", type: sql.types.string}),
+    authorId: sql.column({name: "author_id", type: sql.types.int})
+});
+
+const database = new sqlite3.Database(":memory:");
 ```
 
 We then define types for the root, books and authors:
@@ -76,13 +68,13 @@ const Root = new RootJoinType({
             "books": many({
                 target: Book,
                 select: args => {
-                    let books = knex("book");
+                    let books = sql.from(BookTable);
 
                     if ("genre" in args) {
-                        books = books.where("genre", "=", args["genre"]);
+                        books = books.where(sql.eq(BookTable.c.genre, args["genre"]));
                     }
 
-                    return {query: books};
+                    return books;
                 },
                 args: {genre: {type: GraphQLString}}
             })
@@ -90,15 +82,16 @@ const Root = new RootJoinType({
     }
 });
 
-function fetchImmediatesFromQuery(selections, {query}) {
-    const requestedColumns = selections.map(selection => selection.field.columnName);
-    const columnsToFields = fromPairs(zip(requestedColumns, selections.map(selection => selection.key)));
-    return query.clone().select(requestedColumns).then(records =>
-        records.map(record =>
-            mapKeys(record, (value, name) => columnsToFields[name])
-        )
-    );
+function executeQuery(query) {
+    const {text, params} = sql.compile(query);
+    return Promise.fromCallback(callback => database.all(text, ...params, callback));
 }
+
+const fetchImmediatesFromQuery = table => (selections, sqlQuery) => {
+    const requestedColumns = selections.map(selection => table.c[selection.field.columnName].as(selection.key));
+    // TODO: Should include primary key columns for distinct to work correctly
+    return executeQuery(sqlQuery.select(...requestedColumns).distinct());
+};
 
 const Book = new JoinType({
     name: "Book",
@@ -108,22 +101,20 @@ const Book = new JoinType({
             id: field({columnName: "id", type: GraphQLInt}),
             title: field({columnName: "title", type: GraphQLString}),
             genre: field({columnName: "genre", type: GraphQLString}),
-            authorId: field({columnName: "author_id", type: GraphQLInt}),
+            authorId: field({columnName: "authorId", type: GraphQLInt}),
             author: single({
                 target: Author,
-                select: (args, {query: bookQuery}) => ({
-                    query: knex("author").join(
-                        bookQuery.clone().distinct("book.author_id").as("book"),
-                        "author.id",
-                        "book.author_id"
-                    )
-                }),
+                select: (args, bookQuery) => {
+                    const books = bookQuery.select(BookTable.c.authorId).subquery();
+                    return sql.from(AuthorTable)
+                        .join(books, sql.eq(books.c.authorId, AuthorTable.c.id));
+                },
                 join: {"authorId": "id"}
            } )
         };
     },
 
-    fetchImmediates: fetchImmediatesFromQuery
+    fetchImmediates: fetchImmediatesFromQuery(BookTable)
 });
 
 const Author = new JoinType({
@@ -136,7 +127,7 @@ const Author = new JoinType({
         };
     },
 
-    fetchImmediates: fetchImmediatesFromQuery
+    fetchImmediates: fetchImmediatesFromQuery(AuthorTable)
 });
 ```
 
@@ -207,13 +198,13 @@ const Root = new RootJoinType({
             "books": many({
                 target: Book,
                 select: args => {
-                    let books = knex("book");
+                    let books = sql.from(BookTable);
 
                     if ("genre" in args) {
-                        books = books.where("genre", "=", args["genre"]);
+                        books = books.where(sql.eq(BookTable.c.genre, args["genre"]));
                     }
 
-                    return {query: books};
+                    return books;
                 },
                 args: {genre: {type: GraphQLString}}
             })
@@ -241,22 +232,20 @@ const Book = new JoinType({
             id: field({columnName: "id", type: GraphQLInt}),
             title: field({columnName: "title", type: GraphQLString}),
             genre: field({columnName: "genre", type: GraphQLString}),
-            authorId: field({columnName: "author_id", type: GraphQLInt}),
+            authorId: field({columnName: "authorId", type: GraphQLInt}),
             author: single({
                 target: Author,
-                select: (args, {query: bookQuery}) => ({
-                    query: knex("author").join(
-                        bookQuery.clone().distinct("book.author_id").as("book"),
-                        "author.id",
-                        "book.author_id"
-                    )
-                }),
+                select: (args, bookQuery) => {
+                    const books = bookQuery.select(BookTable.c.authorId).subquery();
+                    return sql.from(AuthorTable)
+                        .join(books, sql.eq(books.c.authorId, AuthorTable.c.id));
+                },
                 join: {"authorId": "id"}
-            })
+           } )
         };
     },
 
-    fetchImmediates: fetchImmediatesFromQuery
+    fetchImmediates: fetchImmediatesFromQuery(BookTable)
 });
 ```
 
@@ -278,15 +267,11 @@ is the requested fields that aren't defined as relationships
 original GraphQL query, or are required as part of the join.
 
 ```javascript
-function fetchImmediatesFromQuery(selections, {query}) {
-    const requestedColumns = selections.map(selection => selection.field.columnName);
-    const columnsToFields = fromPairs(zip(requestedColumns, selections.map(selection => selection.key)));
-    return query.clone().select(requestedColumns).then(records =>
-        records.map(record =>
-            mapKeys(record, (value, name) => columnsToFields[name])
-        )
-    );
-}
+const fetchImmediatesFromQuery = table => (selections, sqlQuery) => {
+    const requestedColumns = selections.map(selection => table.c[selection.field.columnName].as(selection.key));
+    // TODO: Should include primary key columns for distinct to work correctly
+    return executeQuery(sqlQuery.select(...requestedColumns).distinct());
+};
 ```
 
 For completeness, we can tweak the definition of `Author` so
@@ -302,27 +287,19 @@ const Author = new JoinType({
             name: field({columnName: "name", type: GraphQLString}),
             books: many({
                 target: Book,
-                select: (args, {query: authorQuery}) => ({
-                    query: knex("book").join(
-                        authorQuery.clone().distinct("author.id").as("author"),
-                        "book.author_id",
-                        "author.id"
-                    )
-                }),
+                select: (args, authorQuery}) => {
+                    const authors = authorQuery.subquery();
+                    return sql.from(BookTable)
+                        .join(authors, sql.eq(authors.c.id, BookTable.c.authorId));
+                },
                 join: {"id": "authorId"}
             })
         };
     },
 
-    fetchImmediates: fetchImmediatesFromQuery
+    fetchImmediates: fetchImmediatesFromQuery(AuthorTable)
 });
 ```
-
-(Note that when we return the Knex query, we return it wrapped in an object
-i.e. `{query: query}`. This is to prevent the query from being executed, since
-Knex queries also behave as promises (where `.then()` begins execution of the
-query), and GraphJoiner allows promises to be returned from the various
-methods where we might want to return a Knex query.)
 
 ## Installation
 
