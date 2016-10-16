@@ -80,8 +80,11 @@ exports[module.filename] = () => {
 
         const fetchImmediatesFromQuery = table => (selections, sqlQuery) => {
             const requestedColumns = selections.map(selection => table.c[selection.field.columnName].as(selection.key));
-            // TODO: Should include primary key columns for distinct to work correctly
-            return executeQuery(sqlQuery.select(...requestedColumns).distinct());
+            const primaryKeyColumns = table.primaryKey.columns
+                .map(column => column.as("_primaryKey_" + column.key()));
+            const columns = requestedColumns.concat(primaryKeyColumns);
+            const immediatesQuery = sqlQuery.select(...columns).distinct();
+            return executeQuery(immediatesQuery);
         };
 
         const Book = new JoinType({
