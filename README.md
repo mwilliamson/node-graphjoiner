@@ -32,14 +32,6 @@ An author has an ID and a name.
 ```javascript
 import sql from "sql-gen";
 
-let knex = Knex({
-    dialect: "sqlite3",
-    connection: {
-        filename: ":memory:"
-    },
-    useNullAsDefault: true
-});
-
 const AuthorTable = sql.table("author", {
     id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
     name: sql.column({name: "name", type: sql.types.string})
