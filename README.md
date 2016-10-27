@@ -14,7 +14,7 @@ For instance, given the query:
         }
     }
 
-A naive GraphQL implement would issue one SQL query to get the list of all
+A naive GraphQL implementation would issue one SQL query to get the list of all
 books in the comedy genre, and then N queries to get the author of each book
 (where N is the number of books returned by the first query).
 
