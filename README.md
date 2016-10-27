@@ -25,7 +25,7 @@ and one to get the authors of books in the comedy genre.
 
 ## Example
 
-Let's say we have a SQL database which we access using Knex.
+Let's say we have a SQL database.
 A book has an ID, a title and an author ID.
 An author has an ID and a name.
 
