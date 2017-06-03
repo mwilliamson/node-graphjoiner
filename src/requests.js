@@ -40,7 +40,7 @@ function reader(variables, fragments) {
                 type: arg.type,
                 defaultValue: arg.defaultValue === undefined ? null : arg.defaultValue
             }));
-            return getArgumentValues(argumentDefinitions, ast.arguments, variables);
+            return getArgumentValues({args: argumentDefinitions}, ast, variables);
         } else {
             return {};
         }
@@ -86,8 +86,8 @@ function reader(variables, fragments) {
             const directive = node.directives[directiveIndex];
             if (directive.name.value === "include") {
                 const args = getArgumentValues(
-                    GraphQLIncludeDirective.args,
-                    directive.arguments,
+                    GraphQLIncludeDirective,
+                    directive,
                     variables
                 );
                 if (args.if === false) {
@@ -95,8 +95,8 @@ function reader(variables, fragments) {
                 }
             } else if (directive.name.value === "skip") {
                 const args = getArgumentValues(
-                    GraphQLSkipDirective.args,
-                    directive.arguments,
+                    GraphQLSkipDirective,
+                    directive,
                     variables
                 );
                 if (args.if === true) {

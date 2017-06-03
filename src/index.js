@@ -108,7 +108,7 @@ class Relationship {
     toGraphQLField() {
         // TODO: differentiate between root and non-root types properly
         const resolve = Object.keys(this._join).length !== 0 ? resolveField : (source, args, context, info) => {
-            const request = requestFromGraphqlAst(info.fieldASTs[0], this._target, this, info.variableValues, info.fragments);
+            const request = requestFromGraphqlAst(info.fieldNodes[0], this._target, this, info.variableValues, info.fragments);
             return this.fetch(request, null).then(results => results.get([]));
         };
         return {
@@ -246,7 +246,7 @@ export function field(options) {
 };
 
 function resolveField(source, args, context, info) {
-    return source[requestedFieldKey(info.fieldASTs[0])];
+    return source[requestedFieldKey(info.fieldNodes[0])];
 }
 
 export class RootJoinType extends JoinType {
